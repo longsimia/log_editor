@@ -179,7 +179,7 @@ input[type=file]{display:none}
 </style>
 </head>
 <body>
-<div id="page-upload" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 20px">
+<div id="page-upload" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;position:relative;padding-bottom:100px">
   <div style="max-width:560px;width:100%;text-align:center">
     <div style="font-size:28px;font-weight:500;color:var(--text);margin-bottom:12px">TRPG 團錄編輯器</div>
     <div style="font-size:15px;color:var(--sub);margin-bottom:40px;line-height:1.7">上傳 ccfolia 匯出的 HTML 團錄檔以開始編輯</div>
@@ -201,6 +201,11 @@ input[type=file]{display:none}
       </button>
     </div>
     <div id="upload-status" style="margin-top:20px;font-size:13px;color:var(--sub);min-height:1.4em"></div>
+  </div>
+  <div style="position:absolute;bottom:16px;left:0;right:0;padding:0 24px;text-align:center;font-size:12px;color:var(--sub);line-height:1.8">
+    本工具使用 Claude AI 輔助製作。您可以自由修改及使用。<br>
+    您上傳的檔案與所有編輯內容均於瀏覽器本地端處理，不會傳送至任何伺服器，亦不會被收集或用於訓練。<br>
+    <span style="opacity:.65">*本工具載入 Google Fonts 字型服務，Google 可能依其隱私權政策記錄基本連線資訊（如 IP 位址）。</span>
   </div>
 </div>
 <div id="page-editor">

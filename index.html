@@ -87,6 +87,8 @@ body{background:var(--bg);font-family:var(--font);min-height:100vh;color:var(--t
 .txt p{margin:0;line-height:inherit;scroll-margin-top:64px;white-space:break-spaces}.txt p:empty,.txt p>br:only-child{min-height:1.6em}
 .ws-only{display:inline-block;min-width:1ch;white-space:break-spaces}
 .txt a{color:inherit;text-decoration:underline;text-underline-offset:2px;cursor:pointer;opacity:.85}
+.theme-text-color{color:var(--sel-dark)!important}
+[data-theme="light"] .theme-text-color{color:var(--sel-light)!important}
 
 /* ── 頻道群組 ── */
 .channel-cluster{position:relative;z-index:0}
@@ -133,6 +135,31 @@ body{background:var(--bg);font-family:var(--font);min-height:100vh;color:var(--t
 #fmt-bar button{width:28px;height:28px;border:none;border-radius:4px;background:transparent;color:var(--text);cursor:pointer;font-size:13px;font-family:var(--font);display:flex;align-items:center;justify-content:center;transition:background .2s}
 #fmt-bar button:hover{background:var(--btn-hover)}
 #fmt-bar .sep{width:1px;height:18px;background:var(--modal-border);margin:0 2px}
+#btn-fmt-color{color:#ed4245!important;font-weight:400;font-style:normal}
+#fmt-color-panel{
+  display:none;position:fixed;z-index:320;background:color-mix(in srgb, var(--modal-bg) 92%, transparent);border:1px solid color-mix(in srgb, var(--modal-border) 88%, transparent);border-radius:14px;
+  padding:8px;box-shadow:0 12px 28px rgba(0,0,0,.16),0 2px 8px rgba(0,0,0,.08);width:176px;backdrop-filter:blur(14px)
+}
+#fmt-color-panel.open{display:block}
+.fmt-color-row{display:flex;align-items:center;gap:6px}
+#fmt-color-hex{
+  flex:1;min-width:0;font-size:12px;font-family:var(--font);letter-spacing:.03em;background:var(--input-bg,#1e1f22);color:var(--text);
+  border:1px solid var(--modal-border);border-radius:8px;padding:7px 9px;outline:none
+}
+#fmt-color-hex:focus{border-color:var(--sub)}
+.fmt-color-chip{
+  width:44px;height:28px;border-radius:8px;border:1px solid var(--modal-border);cursor:pointer;flex-shrink:0;
+  background:var(--fmt-color-chip,#ed4245);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);position:relative;overflow:hidden
+}
+#fmt-color-native{
+  position:absolute;inset:0;opacity:0;cursor:pointer;border:none;padding:0;margin:0;width:100%;height:100%
+}
+.fmt-color-actions{display:grid;grid-template-columns:44px minmax(0,1fr);gap:6px;margin-top:8px}
+.fmt-color-actions button{
+  border:none;border-radius:8px;font-size:11px;cursor:pointer;font-family:var(--font);font-weight:500;line-height:1.2;height:26px;padding:0 8px;white-space:nowrap
+}
+#fmt-color-apply{background:#5865f2;color:#fff;padding:0 4px}
+#fmt-color-reset{background:var(--btn-bg);color:var(--text);min-width:0}
 
 /* ── Modal 通用 ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -347,14 +374,27 @@ input[type=file]{display:none}
   <button onclick="fmt('bold')" title="粗體"><b>B</b></button>
   <button onclick="fmt('italic')" title="斜體"><i>I</i></button>
   <button onclick="fmtStrike()" title="刪除線"><s>S</s></button>
-  <div class="sep"></div>
-  <button onclick="fmtAlignToggle()" id="fmt-center" title="置中（點擊切換）">≡</button>
+  <button id="btn-fmt-color" onmousedown="event.preventDefault();openFmtColorPicker()" title="文字顏色">A</button>
   <div class="sep"></div>
   <button onclick="fmtLink()" title="插入超連結">🔗</button>
+  <div class="sep"></div>
+  <button onclick="fmtAlignToggle()" id="fmt-center" title="置中（點擊切換）">≡</button>
   <div class="sep"></div>
   <button onclick="fmtFontSize(-1)" title="縮小字號">A−</button>
   <span id="fmt-size" style="font-size:11px;color:var(--sub);min-width:28px;text-align:center;pointer-events:none">—</span>
   <button onclick="fmtFontSize(+1)" title="放大字號">A+</button>
+</div>
+<div id="fmt-color-panel" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">
+  <div class="fmt-color-row">
+    <label class="fmt-color-chip" id="fmt-color-chip" title="開啟色票">
+      <input type="color" id="fmt-color-native" value="#ed4245" oninput="syncFmtColorFromNative(this.value)" onchange="applyFmtColorFromNative(this.value)" onmousedown="event.stopPropagation()">
+    </label>
+    <input type="text" id="fmt-color-hex" value="#ED4245" maxlength="7" spellcheck="false" autocomplete="off" oninput="syncFmtColorFromHex(this.value)">
+  </div>
+  <div class="fmt-color-actions">
+    <button id="fmt-color-apply" onclick="fmtTextColor()">套用</button>
+    <button id="fmt-color-reset" onclick="resetFmtTextColor()">恢復默認顏色</button>
+  </div>
 </div>
 
 <!-- 訊息區 -->
@@ -1535,17 +1575,107 @@ document.querySelectorAll('.msg').forEach(attachMsgHandlers);
 
 // ── 格式工具列（選取文字時浮現） ──
 const fmtBar = document.getElementById('fmt-bar');
+const fmtColorPanel = document.getElementById('fmt-color-panel');
 let fmtHideTimer = null;
+let _fmtColorRange = null;
+function closeFmtColorPanel(){
+  fmtColorPanel?.classList.remove('open');
+}
+function hideFmtUi(){
+  fmtBar.style.display='none';
+  closeFmtColorPanel();
+}
+function isRangeInsideTxt(range){
+  if(!range) return false;
+  const node = range.commonAncestorContainer.nodeType===3
+    ? range.commonAncestorContainer.parentElement
+    : range.commonAncestorContainer;
+  return !!node?.closest?.('.txt');
+}
+function normalizeHexColor(hex){
+  const raw = String(hex||'').trim().replace(/^#/,'').replace(/[^0-9a-f]/gi,'');
+  if(raw.length===3) return '#'+raw.split('').map(ch=>ch+ch).join('').toUpperCase();
+  if(raw.length===6) return '#'+raw.toUpperCase();
+  return '';
+}
+function rgbStringToHex(color){
+  const m = String(color||'').match(/rgba?\(([^)]+)\)/i);
+  if(!m) return '';
+  const nums = m[1].split(',').slice(0,3).map(v=>Math.max(0,Math.min(255,parseInt(v,10)||0)));
+  return '#'+nums.map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+function getCurrentSelectionTextColor(range){
+  if(!range) return '#ED4245';
+  const refNode = range.startContainer.nodeType===3 ? range.startContainer.parentElement : range.startContainer;
+  const themed = refNode?.closest?.('.theme-text-color');
+  if(themed){
+    const theme = document.documentElement.getAttribute('data-theme') === 'light' ? '--sel-light' : '--sel-dark';
+    const themedColor = themed.style.getPropertyValue(theme)?.trim();
+    const normalizedThemed = normalizeHexColor(themedColor);
+    if(normalizedThemed) return normalizedThemed;
+  }
+  const color = window.getComputedStyle(refNode || document.body).color;
+  return normalizeHexColor(rgbStringToHex(color)) || '#ED4245';
+}
+function syncFmtColorFromHex(value){
+  const normalized = normalizeHexColor(value);
+  if(!normalized) return;
+  const hexInput = document.getElementById('fmt-color-hex');
+  const nativeInput = document.getElementById('fmt-color-native');
+  const chip = document.getElementById('fmt-color-chip');
+  if(hexInput && hexInput.value !== normalized) hexInput.value = normalized;
+  if(nativeInput && nativeInput.value !== normalized.toLowerCase()) nativeInput.value = normalized.toLowerCase();
+  if(chip) chip.style.setProperty('--fmt-color-chip', normalized);
+}
+function syncFmtColorFromNative(value){
+  const normalized = normalizeHexColor(value);
+  if(!normalized) return;
+  const hexInput = document.getElementById('fmt-color-hex');
+  if(hexInput) hexInput.value = normalized;
+  syncFmtColorFromHex(normalized);
+}
+function applyFmtColorFromNative(value){
+  const normalized = normalizeHexColor(value);
+  if(!normalized) return;
+  syncFmtColorFromNative(normalized);
+  fmtTextColor(normalized);
+}
+function positionFmtColorPanel(){
+  if(!fmtColorPanel?.classList.contains('open')) return;
+  const rect = fmtBar.getBoundingClientRect();
+  const panelW = fmtColorPanel.offsetWidth || 190;
+  const panelH = fmtColorPanel.offsetHeight || 96;
+  let left = rect.right - panelW;
+  let top = rect.bottom + 8;
+  if(left + panelW > window.innerWidth - 8) left = window.innerWidth - panelW - 8;
+  if(top + panelH > window.innerHeight - 8) top = window.innerHeight - panelH - 8;
+  if(top < 8) top = 8;
+  if(left < 8) left = 8;
+  fmtColorPanel.style.left = left + 'px';
+  fmtColorPanel.style.top = top + 'px';
+}
+function stripThemeTextColor(node){
+  if(!node?.querySelectorAll) return;
+  Array.from(node.querySelectorAll('.theme-text-color')).forEach(span=>{
+    while(span.firstChild) span.parentNode.insertBefore(span.firstChild, span);
+    span.remove();
+  });
+}
 function showFmtBar(){
+  if(fmtColorPanel.classList.contains('open') && fmtColorPanel.contains(document.activeElement)){
+    fmtBar.style.display='flex';
+    positionFmtColorPanel();
+    return;
+  }
   const sel = window.getSelection();
   if(!sel || sel.isCollapsed || !sel.toString().trim()){
-    fmtBar.style.display='none'; return;
+    hideFmtUi(); return;
   }
   const range = sel.getRangeAt(0);
-  const inTxt = range.commonAncestorContainer.nodeType===3
-    ? range.commonAncestorContainer.parentElement.closest('.txt')
-    : range.commonAncestorContainer.closest?.('.txt');
-  if(!inTxt){ fmtBar.style.display='none'; return; }
+  const inTxt = isRangeInsideTxt(range)
+    ? (range.commonAncestorContainer.nodeType===3 ? range.commonAncestorContainer.parentElement.closest('.txt') : range.commonAncestorContainer.closest?.('.txt'))
+    : null;
+  if(!inTxt){ hideFmtUi(); return; }
   const rect = range.getBoundingClientRect();
   fmtBar.style.display='flex';
   const _refNode = range.startContainer.nodeType===3
@@ -1559,20 +1689,163 @@ function showFmtBar(){
   const topPos = rect.top - barH - 8;
   fmtBar.style.left = leftPos + 'px';
   fmtBar.style.top = (topPos < 4 ? rect.bottom + 6 : topPos) + 'px';
+  positionFmtColorPanel();
 }
 document.addEventListener('mouseup', ()=>{ setTimeout(showFmtBar, 10); });
 document.addEventListener('touchend', ()=>{ setTimeout(showFmtBar, 100); });
 document.addEventListener('selectionchange', ()=>{ setTimeout(showFmtBar, 10); });
 document.addEventListener('mousedown', e=>{
-  if(!fmtBar.contains(e.target)) fmtBar.style.display='none';
+  if(!fmtBar.contains(e.target) && !fmtColorPanel.contains(e.target)) hideFmtUi();
 });
 document.addEventListener('touchstart', e=>{
-  if(!fmtBar.contains(e.target)) fmtBar.style.display='none';
+  if(!fmtBar.contains(e.target) && !fmtColorPanel.contains(e.target)) hideFmtUi();
 }, {passive:true});
+window.addEventListener('resize', ()=>{ if(fmtColorPanel.classList.contains('open')) positionFmtColorPanel(); });
 
 function fmt(cmd){
   document.execCommand(cmd, false, null);
-  fmtBar.style.display='none';
+  hideFmtUi();
+}
+
+function hexToHsl(hex){
+  const raw = String(hex||'').replace('#','');
+  const full = raw.length===3 ? raw.split('').map(ch=>ch+ch).join('') : raw.padEnd(6,'0').slice(0,6);
+  let r = parseInt(full.slice(0,2),16)/255;
+  let g = parseInt(full.slice(2,4),16)/255;
+  let b = parseInt(full.slice(4,6),16)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  let h, s, l = (max + min) / 2;
+  if(max === min){
+    h = s = 0;
+  }else{
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch(max){
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      default: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return {h:h*360, s:s*100, l:l*100};
+}
+function hslToHex(h,s,l){
+  h = ((h%360)+360)%360;
+  s = Math.max(0,Math.min(100,s))/100;
+  l = Math.max(0,Math.min(100,l))/100;
+  const c = (1 - Math.abs(2*l - 1)) * s;
+  const x = c * (1 - Math.abs((h/60)%2 - 1));
+  const m = l - c/2;
+  let r=0,g=0,b=0;
+  if(h < 60){ r=c; g=x; }
+  else if(h < 120){ r=x; g=c; }
+  else if(h < 180){ g=c; b=x; }
+  else if(h < 240){ g=x; b=c; }
+  else if(h < 300){ r=x; b=c; }
+  else { r=c; b=x; }
+  return '#'+[r,g,b].map(v=>Math.round((v+m)*255).toString(16).padStart(2,'0')).join('');
+}
+function deriveThemeTextColors(baseHex){
+  const normalized = normalizeHexColor(baseHex) || '#ED4245';
+  return {darkColor: normalized, lightColor: normalized};
+}
+function openFmtColorPicker(){
+  const sel = window.getSelection();
+  if(!sel || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  if(!isRangeInsideTxt(range)) return;
+  _fmtColorRange = range.cloneRange();
+  restoreFmtColorSelection();
+  const currentHex = getCurrentSelectionTextColor(range);
+  const hexInput = document.getElementById('fmt-color-hex');
+  const nativeInput = document.getElementById('fmt-color-native');
+  if(hexInput) hexInput.value = currentHex;
+  if(nativeInput) nativeInput.value = currentHex.toLowerCase();
+  syncFmtColorFromHex(currentHex);
+  fmtColorPanel.classList.add('open');
+  positionFmtColorPanel();
+}
+function restoreFmtColorSelection(){
+  if(!_fmtColorRange) return null;
+  const sel = window.getSelection();
+  const range = _fmtColorRange.cloneRange();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  return range;
+}
+function tryUnwrapExactThemeSpan(range){
+  const startEl = range.startContainer.nodeType===3 ? range.startContainer.parentElement : range.startContainer;
+  const endEl = range.endContainer.nodeType===3 ? range.endContainer.parentElement : range.endContainer;
+  const themeSpan = startEl?.closest?.('.theme-text-color');
+  if(!themeSpan || themeSpan !== endEl?.closest?.('.theme-text-color')) return false;
+  const parent = themeSpan.parentNode;
+  if(!parent) return false;
+  const startMarker = document.createComment('fmt-uncolor-start');
+  const endMarker = document.createComment('fmt-uncolor-end');
+  parent.insertBefore(startMarker, themeSpan);
+  while(themeSpan.firstChild) parent.insertBefore(themeSpan.firstChild, themeSpan);
+  parent.insertBefore(endMarker, themeSpan);
+  themeSpan.remove();
+  const sel = window.getSelection();
+  const newRange = document.createRange();
+  newRange.setStartAfter(startMarker);
+  newRange.setEndBefore(endMarker);
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+  startMarker.remove();
+  endMarker.remove();
+  _fmtColorRange = newRange.cloneRange();
+  return true;
+}
+function fmtTextColor(hex){
+  const normalized = normalizeHexColor(hex || document.getElementById('fmt-color-hex')?.value);
+  if(!normalized) return;
+  const range = restoreFmtColorSelection();
+  if(!range || !isRangeInsideTxt(range)) return;
+  const frag = range.extractContents();
+  stripThemeTextColor(frag);
+  const span = document.createElement('span');
+  const {darkColor, lightColor} = deriveThemeTextColors(normalized);
+  span.className = 'theme-text-color';
+  span.style.setProperty('--sel-dark', darkColor);
+  span.style.setProperty('--sel-light', lightColor);
+  span.appendChild(frag);
+  range.insertNode(span);
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+  _fmtColorRange = newRange.cloneRange();
+  syncFmtColorFromHex(normalized);
+  closeFmtColorPanel();
+  showFmtBar();
+}
+function resetFmtTextColor(){
+  const range = restoreFmtColorSelection();
+  if(!range || !isRangeInsideTxt(range)) return;
+  if(tryUnwrapExactThemeSpan(range)){
+    closeFmtColorPanel();
+    showFmtBar();
+    return;
+  }
+  const frag = range.extractContents();
+  stripThemeTextColor(frag);
+  const startMarker = document.createComment('fmt-reset-start');
+  const endMarker = document.createComment('fmt-reset-end');
+  range.insertNode(endMarker);
+  range.insertNode(frag);
+  range.insertNode(startMarker);
+  const sel = window.getSelection();
+  const newRange = document.createRange();
+  newRange.setStartAfter(startMarker);
+  newRange.setEndBefore(endMarker);
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+  startMarker.remove();
+  endMarker.remove();
+  _fmtColorRange = newRange.cloneRange();
+  closeFmtColorPanel();
+  showFmtBar();
 }
 
 // 選取行置中切換
@@ -1591,7 +1864,7 @@ function fmtAlignToggle(){
   if(!ps.length) return;
   const allCenter = ps.every(p=>p.style.textAlign==='center');
   ps.forEach(p=>{ p.style.textAlign = allCenter ? '' : 'center'; });
-  fmtBar.style.display='none';
+  hideFmtUi();
 }
 
 
@@ -1618,7 +1891,7 @@ function fmtFontSize(delta){
   // 更新字號顯示
   const _el = document.getElementById('fmt-size');
   if(_el) _el.textContent = newSize+'px';
-  fmtBar.style.display='none';
+  hideFmtUi();
 }
 
 
@@ -1634,7 +1907,7 @@ function fmtLink(){
   const el = range.commonAncestorContainer;
   const a = el.nodeType===1 ? el.closest('a') : el.parentElement?.closest('a');
   if(a){ a.target='_blank'; a.rel='noopener'; }
-  fmtBar.style.display='none';
+  hideFmtUi();
 }
 
 
@@ -1709,7 +1982,7 @@ function fmtStrike(){
     : range.commonAncestorContainer.closest?.('.txt');
   if(!inTxt) return;
   document.execCommand('strikeThrough', false, null);
-  fmtBar.style.display='none';
+  hideFmtUi();
 }
 
 // ── Backspace 修正 ──
@@ -1934,6 +2207,8 @@ body{background:var(--bg);font-family:'Noto Sans TC',sans-serif;min-height:100vh
 .txta{font-size:15px;color:var(--text);line-height:1.6}
 .txta p{margin:0;line-height:inherit;white-space:break-spaces}
 .ws-only{display:inline-block;min-width:1ch;white-space:break-spaces}
+.theme-text-color{color:var(--sel-dark)!important}
+[data-theme=light] .theme-text-color{color:var(--sel-light)!important}
 .txta p:empty,.txta p>br:only-child{min-height:1.6em}
 .txta a{color:inherit;text-decoration:underline;text-underline-offset:2px;opacity:.85}
 .txta a:hover{opacity:1}

@@ -244,9 +244,9 @@ input[type=file]{display:none}
 <div id="fmt-bar">
   <button onclick="fmt('bold')" title="粗體"><b>B</b></button>
   <button onclick="fmt('italic')" title="斜體"><i>I</i></button>
+  <button onclick="fmtStrike()" title="刪除線"><s>S</s></button>
   <div class="sep"></div>
   <button onclick="fmtAlignToggle()" id="fmt-center" title="置中（點擊切換）">≡</button>
-  <div class="sep"></div>
   <div class="sep"></div>
   <button onclick="fmtLink()" title="插入超連結">🔗</button>
   <div class="sep"></div>
@@ -1180,8 +1180,35 @@ function removeLink(){
   hideLinkTooltip();
 }
 
+
+// ── 刪除線 ──
+function fmtStrike(){
+  const sel = window.getSelection();
+  if(!sel || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  const inTxt = range.commonAncestorContainer.nodeType===3
+    ? range.commonAncestorContainer.parentElement.closest('.txt')
+    : range.commonAncestorContainer.closest?.('.txt');
+  if(!inTxt) return;
+  document.execCommand('strikeThrough', false, null);
+  fmtBar.style.display='none';
+}
+
 // ── Backspace 修正 ──
 document.addEventListener('keydown', e=>{
+  // Ctrl+B 粗體 / Ctrl+I 斜體 / Ctrl+Shift+S 刪除線（在 .txt 內有效）
+  if((e.ctrlKey||e.metaKey) && !e.altKey){
+    const sel = window.getSelection();
+    const inTxt = sel && sel.rangeCount && (()=>{
+      const n = sel.getRangeAt(0).commonAncestorContainer;
+      return (n.nodeType===3?n.parentElement:n).closest?.('.txt');
+    })();
+    if(inTxt){
+      if(e.key==='b'||e.key==='B'){ e.preventDefault(); fmt('bold'); return; }
+      if(e.key==='i'||e.key==='I'){ e.preventDefault(); fmt('italic'); return; }
+      if(e.shiftKey && (e.key==='s'||e.key==='S')){ e.preventDefault(); fmtStrike(); return; }
+    }
+  }
   if(e.key!=='Backspace') return;
   const sel=window.getSelection();
   if(!sel||!sel.rangeCount) return;

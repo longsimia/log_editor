@@ -36,6 +36,9 @@ body{background:var(--bg);font-family:var(--font);min-height:100vh;color:var(--t
 .tbtn svg{width:13px;height:13px;flex-shrink:0}
 #btn-export{background:#5865f2;color:#fff}
 #btn-export:hover{background:#4752c4}
+.preview-jump{outline:2px solid #5865f2;outline-offset:-2px;border-radius:8px}
+.preview-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:1200;display:none}
+.preview-frame{display:block;width:100%;height:100%;border:none;background:#1e1f22}
 .menu-wrap{position:relative}
 .menu-panel{
   position:absolute;top:calc(100% + 8px);left:0;min-width:210px;background:var(--modal-bg);border:1px solid var(--modal-border);
@@ -47,7 +50,10 @@ body{background:var(--bg);font-family:var(--font);min-height:100vh;color:var(--t
 .menu-check:hover,.menu-btn:hover,.menu-channel-row:hover{background:var(--btn-hover)}
 .menu-check input{margin:0}
 .menu-sep{height:1px;background:var(--modal-border);margin:6px 0}
+.menu-section-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .menu-section{font-size:11px;color:var(--sub);padding:2px 8px 6px}
+.menu-mini-btn{border:none;background:none;color:var(--sub);font-size:11px;cursor:pointer;font-family:var(--font);padding:0 4px}
+.menu-mini-btn:hover{color:var(--text)}
 .menu-btn{
   width:100%;display:flex;align-items:center;gap:8px;padding:8px;border:none;background:none;color:var(--text);
   border-radius:8px;font-size:13px;cursor:pointer;font-family:var(--font);text-align:left
@@ -65,6 +71,8 @@ body{background:var(--bg);font-family:var(--font);min-height:100vh;color:var(--t
 .av-hidden .msg .body{margin-left:0;padding-left:16px}
 .nm-hidden .msg .hdr{display:none}
 .nm-hidden .msg .txt{padding-top:2px}
+.nm-hidden .msg.speaker-break{padding-top:30px}
+.nm-hidden .channel-cluster-rail{margin-top:32px;margin-bottom:38px}
 .txt-charcolor .msg .txt{color:inherit}
 .txt-charcolor .msg .txt p{color:inherit}
 .msg:hover{background:var(--hover);z-index:35}
@@ -75,6 +83,7 @@ body{background:var(--bg);font-family:var(--font);min-height:100vh;color:var(--t
 .msg:hover .msg-actions{opacity:1}
 .av-wrap{position:relative;flex-shrink:0;margin-top:5px}
 .av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500;font-family:var(--font);overflow:hidden;flex-shrink:0}
+.av.av-transparent{background:transparent!important;color:transparent!important;border:none!important}
 .av img{width:100%;height:100%;object-fit:contain;border-radius:50%}
 .av-btn{position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .15s;border:none}
 .av-btn svg{width:15px;height:15px;color:#fff}
@@ -120,6 +129,8 @@ body{background:var(--bg);font-family:var(--font);min-height:100vh;color:var(--t
 }
 .channel-cluster-rail .msg{
   background:transparent;
+  padding-top:18px;
+  padding-bottom:24px;
   padding-left:16px;
   padding-right:36px;
 }
@@ -142,6 +153,12 @@ body{background:var(--bg);font-family:var(--font);min-height:100vh;color:var(--t
 }
 #fmt-color-panel.open{display:block}
 .fmt-color-row{display:flex;align-items:center;gap:6px}
+.fmt-suggest{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.fmt-swatch,.channel-swatch{
+  width:18px;height:18px;border-radius:999px;border:1px solid var(--modal-border);cursor:pointer;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);flex-shrink:0
+}
+.fmt-swatch:hover,.channel-swatch:hover{transform:translateY(-1px)}
 #fmt-color-hex{
   flex:1;min-width:0;font-size:12px;font-family:var(--font);letter-spacing:.03em;background:var(--input-bg,#1e1f22);color:var(--text);
   border:1px solid var(--modal-border);border-radius:8px;padding:7px 9px;outline:none
@@ -154,12 +171,11 @@ body{background:var(--bg);font-family:var(--font);min-height:100vh;color:var(--t
 #fmt-color-native{
   position:absolute;inset:0;opacity:0;cursor:pointer;border:none;padding:0;margin:0;width:100%;height:100%
 }
-.fmt-color-actions{display:grid;grid-template-columns:44px minmax(0,1fr);gap:6px;margin-top:8px}
+.fmt-color-actions{display:block;margin-top:8px}
 .fmt-color-actions button{
   border:none;border-radius:8px;font-size:11px;cursor:pointer;font-family:var(--font);font-weight:500;line-height:1.2;height:26px;padding:0 8px;white-space:nowrap
 }
-#fmt-color-apply{background:#5865f2;color:#fff;padding:0 4px}
-#fmt-color-reset{background:var(--btn-bg);color:var(--text);min-width:0}
+#fmt-color-reset{background:var(--btn-bg);color:var(--text);min-width:0;width:100%;display:flex;align-items:center;justify-content:center}
 
 /* ── Modal 通用 ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -200,11 +216,21 @@ input[type=file]{display:none}
 /* ── 新增對話 Modal ── */
 #new-msg-name{width:100%;font-size:13px;font-family:var(--font);background:var(--input-bg,#1e1f22);color:var(--text);border:1px solid var(--modal-border);border-radius:6px;padding:6px 8px;margin-bottom:8px}
 #new-msg-name:focus{outline:none;border-color:var(--sub)}
+#new-msg-channel{width:100%;font-size:13px;font-family:var(--font);background:var(--input-bg,#1e1f22);color:var(--text);border:1px solid var(--modal-border);border-radius:6px;padding:6px 8px;margin-bottom:8px}
+#new-msg-channel:focus{outline:none;border-color:var(--sub)}
 
 /* ── 頻道管理 ── */
 .channel-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--modal-border)}
 .channel-row{cursor:grab}
 .channel-row:last-child{border-bottom:none}
+.channel-row{align-items:flex-start}
+.channel-meta{display:flex;align-items:flex-start;gap:10px;flex:1;min-width:0}
+.channel-meta-main{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.channel-desc{width:100%;min-height:56px;font-size:12px;font-family:var(--font);background:var(--input-bg,#1e1f22);color:var(--text);border:1px solid var(--modal-border);border-radius:6px;padding:6px 8px;resize:vertical;outline:none;line-height:1.55}
+.channel-desc:focus{border-color:var(--sub)}
+.channel-toggle{align-self:flex-end;margin-top:auto}
+.channel-color-wrap{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.channel-suggest{display:flex;flex-wrap:wrap;gap:6px;max-width:92px}
 .channel-meta{flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .channel-name-btn{
   font-size:14px;font-weight:500;color:var(--text);background:none;border:none;padding:0;
@@ -291,31 +317,27 @@ input[type=file]{display:none}
 </style>
 </head>
 <body>
-<div id="page-upload" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;position:relative;padding-bottom:100px">
-  <div style="max-width:560px;width:100%;text-align:center">
-    <div style="font-size:28px;font-weight:500;color:var(--text);margin-bottom:12px">TRPG 團錄編輯器</div>
-    <div style="font-size:15px;color:var(--sub);margin-bottom:40px;line-height:1.7">上傳 ccfolia 匯出的 HTML 團錄檔以開始編輯</div>
-    <div id="upload-drop"
-         style="border:2px dashed var(--modal-border);border-radius:16px;padding:48px 32px;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:24px"
+<div id="page-upload" style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:40px 20px">
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%">
+    <div style="max-width:700px;width:100%;text-align:center">
+      <div style="font-size:28px;font-weight:500;color:var(--text);margin-bottom:12px">TRPG 團錄編輯器</div>
+      <div style="font-size:15px;color:var(--sub);margin-bottom:40px;line-height:1.7">上傳 ccfolia 匯出的 HTML 團錄檔以開始編輯</div>
+      <div id="upload-drop"
+         style="border:2px dashed var(--modal-border);border-radius:16px;padding:56px 32px;cursor:pointer;transition:border-color .2s,background .2s"
          onclick="document.getElementById('log-file-input').click()"
          ondragover="event.preventDefault();this.style.borderColor='var(--text)';this.style.background='var(--btn-bg)'"
          ondragleave="this.style.borderColor='';this.style.background=''"
          ondrop="event.preventDefault();this.style.borderColor='';this.style.background='';handleDrop(event)">
-      <div style="font-size:48px;margin-bottom:16px;line-height:1">&#128196;</div>
-      <div style="font-size:15px;color:var(--text);font-weight:500;margin-bottom:8px">點擊或拖曳上傳 HTML 檔</div>
-      <div style="font-size:13px;color:var(--sub)">支援 ccfolia log HTML 及本編輯器輸出的 HTML</div>
+        <div style="font-size:48px;margin-bottom:16px;line-height:1">&#128196;</div>
+        <div style="font-size:15px;color:var(--text);font-weight:500;margin-bottom:8px">點擊或拖曳上傳 HTML 檔</div>
+        <div style="font-size:13px;color:var(--sub)">支援 ccfolia log HTML 及由本編輯器匯出的閱覽版 HTML</div>
+      </div>
+      <input type="file" id="log-file-input" accept=".html,.htm" style="display:none" onchange="handleFileInput(this)">
+      <div id="upload-status" style="margin-top:20px;font-size:13px;color:var(--sub);min-height:1.4em"></div>
     </div>
-    <input type="file" id="log-file-input" accept=".html,.htm" style="display:none" onchange="handleFileInput(this)">
-    <div style="display:flex;gap:12px;justify-content:center">
-      <button onclick="document.getElementById('log-file-input').click()"
-              style="padding:10px 28px;border-radius:8px;font-size:14px;font-weight:500;border:none;background:#5865f2;color:#fff;cursor:pointer;font-family:var(--font)">
-        選擇 HTML 檔案
-      </button>
-    </div>
-    <div id="upload-status" style="margin-top:20px;font-size:13px;color:var(--sub);min-height:1.4em"></div>
   </div>
-  <div style="position:absolute;bottom:16px;left:0;right:0;padding:0 24px;text-align:center;font-size:12px;color:var(--sub);line-height:1.8">
-    本工具使用 Claude AI 輔助製作。您可以自由修改及使用。<br>
+  <div style="padding:16px 24px 8px;text-align:center;font-size:12px;color:var(--sub);line-height:1.8">
+    本工具使用 Claude 與 ChatGPT 輔助製作。您可以自由修改及使用。<br>
     您上傳的檔案與所有編輯內容均於瀏覽器本地端處理，不會傳送至任何伺服器，亦不會被收集或用於訓練。<br>
     <span style="opacity:.65">*本工具載入 Google Fonts 字型服務，Google 可能依其隱私權政策記錄基本連線資訊（如 IP 位址）。</span>
   </div>
@@ -326,6 +348,14 @@ input[type=file]{display:none}
 <!-- 頂列 -->
 <div id="topbar">
   <h1 id="page-title" title="點擊編輯標題" onclick="startTitleEdit(this)" onblur="finishTitleEdit(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">TRPG 團錄</h1>
+  <button class="tbtn" onclick="toggleTheme()" id="btn-theme">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    <span id="theme-label">淺色</span>
+  </button>
+  <button class="tbtn" id="btn-toc-toggle" onclick="toggleToc()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+    目錄
+  </button>
   <div class="menu-wrap">
     <button class="tbtn" id="btn-hide-menu" onclick="toggleTopbarMenu('hide-menu')" title="顯示設定">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -335,7 +365,10 @@ input[type=file]{display:none}
       <label class="menu-check"><input type="checkbox" id="hide-avatar-toggle" onchange="setAvatarVisibility(this.checked)"><span>顯示頭貼</span></label>
       <label class="menu-check"><input type="checkbox" id="hide-name-toggle" onchange="setNameVisibility(this.checked)"><span>顯示名字</span></label>
       <div class="menu-sep"></div>
-      <div class="menu-section">顯示頻道</div>
+      <div class="menu-section-row">
+        <div class="menu-section">顯示頻道</div>
+        <button type="button" class="menu-mini-btn" onclick="showAllChannels()">全選</button>
+      </div>
       <div id="hide-channel-list" class="menu-channel-list"></div>
     </div>
   </div>
@@ -355,17 +388,9 @@ input[type=file]{display:none}
       </button>
     </div>
   </div>
-  <button class="tbtn" id="btn-toc-toggle" onclick="toggleToc()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
-    目錄
-  </button>
-  <button class="tbtn" onclick="toggleTheme()" id="btn-theme">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-    <span id="theme-label">淺色</span>
-  </button>
-  <button class="tbtn" id="btn-export" onclick="exportReadOnly()">
+  <button class="tbtn" id="btn-export" onclick="openExportPreview()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    輸出閱覽版
+    輸出預覽
   </button>
 </div>
 
@@ -389,10 +414,10 @@ input[type=file]{display:none}
     <label class="fmt-color-chip" id="fmt-color-chip" title="開啟色票">
       <input type="color" id="fmt-color-native" value="#ed4245" oninput="syncFmtColorFromNative(this.value)" onchange="applyFmtColorFromNative(this.value)" onmousedown="event.stopPropagation()">
     </label>
-    <input type="text" id="fmt-color-hex" value="#ED4245" maxlength="7" spellcheck="false" autocomplete="off" oninput="syncFmtColorFromHex(this.value)">
+    <input type="text" id="fmt-color-hex" value="#ED4245" maxlength="7" spellcheck="false" autocomplete="off" oninput="syncFmtColorFromHex(this.value)" onchange="applyFmtColorFromHex(this.value)" onblur="applyFmtColorFromHex(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();applyFmtColorFromHex(this.value)}">
   </div>
+  <div id="fmt-color-suggest" class="fmt-suggest"></div>
   <div class="fmt-color-actions">
-    <button id="fmt-color-apply" onclick="fmtTextColor()">套用</button>
     <button id="fmt-color-reset" onclick="resetFmtTextColor()">恢復默認顏色</button>
   </div>
 </div>
@@ -484,6 +509,10 @@ input[type=file]{display:none}
     </div>
     <div class="modal-body">
       <div>
+        <div style="font-size:12px;color:var(--sub);margin-bottom:6px">對話頻道</div>
+        <select id="new-msg-channel"></select>
+      </div>
+      <div>
         <div style="font-size:12px;color:var(--sub);margin-bottom:6px">角色名稱</div>
         <input type="text" id="new-msg-name" placeholder="輸入角色名稱，或從下方選擇">
         <div id="char-picker" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
@@ -532,6 +561,10 @@ input[type=file]{display:none}
   <img id="cg-lightbox-img" src="" alt="" oncontextmenu="return false" draggable="false">
 </div>
 
+<div class="preview-overlay" id="export-preview-overlay">
+  <iframe class="preview-frame" id="export-preview-frame" title="輸出預覽"></iframe>
+</div>
+
 <div id="var-panel" style="display:none">
   <button class="var-close" onclick="closeVarPanel()">x</button>
   <div class="var-title">選擇頭貼差分</div>
@@ -542,6 +575,7 @@ input[type=file]{display:none}
 
 const CHARS = []; // 由上傳的檔案動態填入
 const charData = {}; // name -> {color, avatar(默認), variants:[{label,dataURL}]}
+const TRANSPARENT_AVATAR = '__transparent_avatar__';
 // charData 由 enterEditor 動態填入
 
 // ── 標題編輯 ──
@@ -588,9 +622,27 @@ function setNameVisibility(visible){
       if(txt) txt.style.color = c;
     });
   }
+  markSpeakerBreaksInEditor();
   syncHideMenuControls();
 }
 function toggleNameVisibility(){ setNameVisibility(!_nmVisible); }
+function markSpeakerBreaksInEditor(){
+  const wrap = document.getElementById('wrap');
+  if(!wrap) return;
+  const msgs = Array.from(wrap.querySelectorAll('.msg'));
+  msgs.forEach(msg=>msg.classList.remove('speaker-break'));
+  const visibleMsgs = msgs.filter(msg=>msg.offsetParent !== null);
+  let prevName = null;
+  visibleMsgs.forEach((msg, idx)=>{
+    const name = msg.dataset.name || '';
+    const parent = msg.parentElement;
+    const firstInCluster = parent?.classList.contains('channel-cluster') && parent.firstElementChild === msg;
+    const prevMsg = visibleMsgs[idx-1];
+    const afterCluster = !!(prevMsg && parent && !parent.classList.contains('channel-cluster') && prevMsg.parentElement?.classList.contains('channel-cluster'));
+    if(prevName !== null && name !== prevName && !firstInCluster && !afterCluster) msg.classList.add('speaker-break');
+    prevName = name;
+  });
+}
 
 // txtColorMap: name -> color string (or '' for default)
 const txtColorMap = {};
@@ -598,6 +650,7 @@ const DEFAULT_CHANNEL = 'main';
 const channelColorMap = {};
 const channelGroupModeMap = {};
 const channelLabelMap = {};
+const channelDescMap = {};
 const hiddenChannelMap = {};
 let channelOrder = [];
 let channelDragKey = null;
@@ -618,6 +671,16 @@ function getChannelDisplayLabel(channel){
   const key = normalizeChannelLabel(channel).toLowerCase();
   return channelLabelMap[key] || normalizeChannelLabel(channel);
 }
+function getChannelDescription(channel){
+  const key = normalizeChannelLabel(channel).toLowerCase();
+  return channelDescMap[key] || '';
+}
+function refreshChannelDescriptionTitles(){
+  document.querySelectorAll('.channel-cluster').forEach(cluster=>{
+    const channel = normalizeChannelLabel(cluster.dataset.channel||'');
+    cluster.title = getChannelDescription(channel) || '';
+  });
+}
 function isChannelHidden(channel){
   const key = normalizeChannelLabel(channel).toLowerCase();
   return !!hiddenChannelMap[key];
@@ -631,12 +694,86 @@ function isChannelGrouped(channel){
 function getChannelPalette(channel){
   const key = normalizeChannelLabel(channel).toLowerCase();
   if(channelColorMap[key]) return {strong:channelColorMap[key]};
+  if(!isDefaultChannel(key)){
+    const suggested = getChannelColorSuggestions(channel)[0];
+    if(suggested) return {strong:suggested};
+  }
   if(key === 'other') return {strong:'#8fb4e8'};
   if(key === 'info') return {strong:'#9cb3e6'};
   if(key === 'ho狙擊手') return {strong:'#d8907d'};
   if(key === 'ho觀測手') return {strong:'#8dd1cb'};
   if(/^ho/i.test(key)) return {strong:'#b799ea'};
   return {strong:'#8fb4e8'};
+}
+function getCharacterColorSuggestions(){
+  const counts = new Map();
+  document.querySelectorAll('.msg[data-name]').forEach(msg=>{
+    const name = msg.dataset.name || '';
+    counts.set(name, (counts.get(name)||0) + 1);
+  });
+  return [...counts.entries()]
+    .map(([name,count])=>{
+      const color = (charData[name]?.color) || document.querySelector(`.msg[data-name="${CSS.escape(name)}"]`)?.dataset.color || '';
+      return {name,count,color:normalizeHexColor(color),priority:isNarratorPriorityName(name) ? 0 : 1};
+    })
+    .filter(item=>item.color)
+    .sort((a,b)=> a.priority - b.priority || b.count - a.count || a.name.localeCompare(b.name,'zh-Hant'))
+    .filter((item, idx, arr)=> arr.findIndex(other=>other.color === item.color) === idx)
+    .slice(0,10);
+}
+function getTopSpeakerColorStats(){
+  const counts = new Map();
+  document.querySelectorAll('.msg').forEach(msg=>{
+    const name = msg.dataset.name || '';
+    if(isNarratorPriorityName(name)) return;
+    counts.set(name, (counts.get(name)||0) + 1);
+  });
+  return [...counts.entries()]
+    .map(([name,count])=>{
+      const color = (charData[name]?.color) || document.querySelector(`.msg[data-name="${CSS.escape(name)}"]`)?.dataset.color || '';
+      return {name,count,color:normalizeHexColor(color)};
+    })
+    .filter(item=>item.color)
+    .sort((a,b)=> b.count - a.count || a.name.localeCompare(b.name,'zh-Hant'));
+}
+const CHANNEL_SUGGEST_FAMILIES = [
+  '#E3C15A', // 黃色
+  '#8DD1CB', // 青綠
+  '#D8907D', // 暖橘
+  '#B799EA', // 紫
+  '#E0B36A', // 黃棕
+  '#91C483'  // 綠
+];
+function deriveSpeakerChannelColor(baseHex, variantIndex=0){
+  const normalized = normalizeHexColor(baseHex) || '#8FB4E8';
+  const {h,s,l} = hexToHsl(normalized);
+  const variants = [
+    {ds:-4, dl:+6},
+    {ds:+2, dl:0},
+    {ds:+8, dl:-8},
+    {ds:-8, dl:+10}
+  ];
+  const v = variants[variantIndex] || variants[0];
+  return hslToHex(h, Math.max(36, Math.min(80, s + v.ds)), Math.max(50, Math.min(74, l + v.dl)));
+}
+function getChannelColorSuggestions(channel){
+  const speakers = getTopSpeakerColorStats();
+  let speakerColors = speakers
+    .map((item, idx)=>deriveSpeakerChannelColor(item.color, idx))
+    .filter((color, idx, arr)=> arr.indexOf(color) === idx)
+    .slice(0, 4);
+  if(speakerColors.length < 4){
+    const base = speakerColors[0] || speakers[0]?.color || '#E59AA6';
+    const supplements = [0,1,2,3]
+      .map(idx=>deriveSpeakerChannelColor(base, idx))
+      .filter(color=>!speakerColors.includes(color));
+    speakerColors = [...speakerColors, ...supplements].slice(0,4);
+  }
+  return [...speakerColors, ...CHANNEL_SUGGEST_FAMILIES]
+    .map(normalizeHexColor)
+    .filter(Boolean)
+    .filter((color, idx, arr)=> arr.indexOf(color) === idx)
+    .slice(0, 7);
 }
 function applyChannelColor(channel, color){
   const key = normalizeChannelLabel(channel).toLowerCase();
@@ -664,9 +801,33 @@ function renameChannelLabel(channel){
   }
   renderChannelManager();
 }
+function applyChannelDescription(channel, value){
+  const key = normalizeChannelLabel(channel).toLowerCase();
+  const next = String(value||'');
+  if(next.trim()){
+    channelDescMap[key] = next;
+  } else {
+    delete channelDescMap[key];
+  }
+  refreshChannelDescriptionTitles();
+}
 function applyChannelHidden(channel, hidden){
   const key = normalizeChannelLabel(channel).toLowerCase();
   hiddenChannelMap[key] = !!hidden;
+  rebuildChannelClusters();
+  renderHideMenu();
+}
+function areAllChannelsShown(){
+  const stats = getChannelStats();
+  if(!stats.length) return true;
+  return stats.every(({channel})=>!isChannelHidden(channel));
+}
+function showAllChannels(){
+  const hideAll = areAllChannelsShown();
+  const stats = getChannelStats();
+  stats.forEach(({channel})=>{
+    hiddenChannelMap[normalizeChannelLabel(channel).toLowerCase()] = hideAll;
+  });
   rebuildChannelClusters();
   renderHideMenu();
 }
@@ -679,6 +840,8 @@ function getChannelStats(){
   const seenKeys = new Set(counts.keys());
   channelOrder = channelOrder.filter(key=>seenKeys.has(key));
   seenKeys.forEach(key=>{ if(!channelOrder.includes(key)) channelOrder.push(key); });
+  channelOrder = channelOrder.filter(key=>key !== DEFAULT_CHANNEL);
+  if(seenKeys.has(DEFAULT_CHANNEL)) channelOrder.unshift(DEFAULT_CHANNEL);
   return channelOrder
     .filter(key=>counts.has(key))
     .map(channel=>({channel,count:counts.get(channel)}));
@@ -753,6 +916,38 @@ function channelDragEnd(event){
   channelDragKey = null;
   document.querySelectorAll('#channel-list .channel-row').forEach(row=>{ row.style.borderTop=''; row.style.opacity=''; });
 }
+const MINI_COLOR_INPUT_STYLE = 'width:24px;height:24px;padding:1px;border:1px solid var(--modal-border);border-radius:3px;cursor:pointer;background:none;flex-shrink:0';
+const CHAR_ACTION_BTN_STYLE = 'font-size:12px;padding:4px 10px';
+const CHAR_SUB_BTN_STYLE = 'font-size:11px;padding:3px 8px;background:var(--btn-bg);color:var(--sub)';
+const CHAR_NEUTRAL_BTN_STYLE = 'font-size:12px;padding:4px 10px;background:var(--btn-bg);color:var(--text)';
+
+function buildChannelSuggestHtml(channel, palette){
+  if(isDefaultChannel(channel)) return '';
+  return `<div class="channel-color-wrap"><input type="color" title="標籤顏色" value="${palette.strong}" onchange="applyChannelColor('${esc(channel)}',this.value)" style="${MINI_COLOR_INPUT_STYLE}"><div class="channel-suggest">${getChannelColorSuggestions(channel).map(color=>`<button type="button" class="channel-swatch" title="${color}" style="background:${color}" onclick="applyChannelColor('${esc(channel)}','${color}')"></button>`).join('')}</div></div>`;
+}
+function buildChannelRowHtml(channel, count){
+  const palette = getChannelPalette(channel);
+  const isMain = isDefaultChannel(channel);
+  const grouped = isChannelGrouped(channel);
+  const label = getChannelDisplayLabel(channel);
+  const desc = getChannelDescription(channel);
+  return `<div class="channel-row" draggable="true" ondragstart="channelDragStart('${esc(channel)}',event)" ondragover="channelDragOver('${esc(channel)}',event)" ondragleave="channelDragLeave(event)" ondrop="channelDrop('${esc(channel)}',event)" ondragend="channelDragEnd(event)">
+    <div class="channel-meta">
+      ${buildChannelSuggestHtml(channel, palette)}
+      <div class="channel-meta-main">
+        <div>
+          <button type="button" class="channel-name-btn" onclick="renameChannelLabel('${esc(channel)}')">[${escHtml(label)}]</button>
+          <span class="channel-sub">${count} 則訊息・${isMain || !grouped ? '維持原樣不標記' : '套用群組標籤'}</span>
+        </div>
+        ${isMain ? '' : `<textarea class="channel-desc" placeholder="頻道說明（hover 時顯示）" oninput="applyChannelDescription('${esc(channel)}',this.value)">${escHtml(desc)}</textarea>`}
+      </div>
+    </div>
+    ${isMain ? '' : `<label class="channel-toggle">
+      <input type="checkbox" ${grouped ? 'checked' : ''} onchange="applyChannelGrouping('${esc(channel)}',this.checked)">
+      群組標籤
+    </label>`}
+  </div>`;
+}
 function renderChannelManager(){
   const list = document.getElementById('channel-list');
   if(!list) return;
@@ -761,23 +956,7 @@ function renderChannelManager(){
     list.innerHTML = `<div style="color:var(--sub);font-size:13px">尚未載入可管理的頻道。</div>`;
     return;
   }
-  list.innerHTML = stats.map(({channel,count})=>{
-    const palette = getChannelPalette(channel);
-    const isMain = isDefaultChannel(channel);
-    const grouped = isChannelGrouped(channel);
-    const label = getChannelDisplayLabel(channel);
-    return `<div class="channel-row" draggable="true" ondragstart="channelDragStart('${esc(channel)}',event)" ondragover="channelDragOver('${esc(channel)}',event)" ondragleave="channelDragLeave(event)" ondrop="channelDrop('${esc(channel)}',event)" ondragend="channelDragEnd(event)">
-      <div class="channel-meta">
-        ${isMain ? '' : `<input type="color" title="導覽條顏色" value="${palette.strong}" onchange="applyChannelColor('${esc(channel)}',this.value)" style="width:24px;height:24px;padding:1px;border:1px solid var(--modal-border);border-radius:3px;cursor:pointer;background:none;flex-shrink:0">`}
-        <button type="button" class="channel-name-btn" onclick="renameChannelLabel('${esc(channel)}')">[${escHtml(label)}]</button>
-        <div class="channel-sub">${count} 則訊息・${isMain || !grouped ? '維持原樣不標記' : '套用群組導覽條'}</div>
-      </div>
-      ${isMain ? '' : `<label class="channel-toggle">
-        <input type="checkbox" ${grouped ? 'checked' : ''} onchange="applyChannelGrouping('${esc(channel)}',this.checked)">
-        群組導覽條
-      </label>`}
-    </div>`;
-  }).join('');
+  list.innerHTML = stats.map(({channel,count})=>buildChannelRowHtml(channel, count)).join('');
 }
 function openChannelManager(){
   renderChannelManager();
@@ -806,6 +985,8 @@ function rebuildChannelClusters(){
     cluster.className = 'channel-cluster channel-cluster-rail';
     cluster.dataset.channel = pendingChannel;
     cluster.style.setProperty('--channel-strong', palette.strong);
+    const desc = getChannelDescription(pendingChannel);
+    cluster.title = desc || '';
     pending.forEach(node=>cluster.appendChild(node));
     frag.appendChild(cluster);
     pending = [];
@@ -830,6 +1011,7 @@ function rebuildChannelClusters(){
   renderChannelManager();
   renderHideMenu();
   applyHiddenChannels();
+  markSpeakerBreaksInEditor();
 }
 function applyHiddenChannels(){
   const wrap = document.getElementById('wrap');
@@ -839,26 +1021,8 @@ function applyHiddenChannels(){
     if(el.classList.contains('msg') && el.parentElement?.classList.contains('channel-cluster')) return;
     el.style.display = isChannelHidden(channel) ? 'none' : '';
   });
-  // 若中間只有被隱藏的頻道，反覆把前後相同頻道群組合併，避免導覽線斷裂
-  let merged = true;
-  while(merged){
-    merged = false;
-    const clustersToCheck = [...wrap.querySelectorAll('.channel-cluster-rail')];
-    for(const cluster of clustersToCheck){
-      if(!cluster.isConnected || cluster.style.display==='none') continue;
-      let next = cluster.nextElementSibling;
-      while(next && next.style.display==='none') next = next.nextElementSibling;
-      if(!next || !next.classList.contains('channel-cluster-rail')) continue;
-      const curCh = normalizeChannelLabel(cluster.dataset.channel);
-      const nextCh = normalizeChannelLabel(next.dataset.channel);
-      if(curCh !== nextCh) continue;
-      while(next.firstChild) cluster.appendChild(next.firstChild);
-      next.remove();
-      merged = true;
-      break;
-    }
-  }
-  // 修正導覽線 & 圓角
+  markSpeakerBreaksInEditor();
+  // 修正導覽線 & 圓角：保留原始群組切分，但允許跨隱藏頻道只連接導覽線
   const clusters = [...wrap.querySelectorAll('.channel-cluster-rail')];
   clusters.forEach(c=>{ c.classList.remove('rail-continues-top','rail-continues-bot'); c.style.borderRadius=''; });
   const visible = clusters.filter(c=>c.style.display!=='none');
@@ -913,6 +1077,40 @@ function lumColor(hex){
   const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
   return (0.299*r+0.587*g+0.114*b)>160?'#1a1a1a':'#ffffff';
 }
+function isTransparentAvatarValue(v){
+  return v === TRANSPARENT_AVATAR;
+}
+function setAvatarPresentation(av, name, color, avatarValue){
+  if(!av) return;
+  const isTransparent = isTransparentAvatarValue(avatarValue);
+  av.classList.toggle('av-transparent', isTransparent);
+  if(isTransparent){
+    av.innerHTML = '';
+    av.style.background = 'transparent';
+    av.style.color = 'transparent';
+    return;
+  }
+  if(avatarValue){
+    av.innerHTML = `<img src="${avatarValue}" alt="${esc(name)}">`;
+    av.style.background = '';
+    av.style.color = '';
+    return;
+  }
+  av.textContent = (name && name[0]) || '?';
+  av.style.background = color;
+  av.style.color = lumColor(color);
+}
+function applyAvatarModeToMsg(msgEl, avatarValue, variantMode=false){
+  if(!msgEl) return;
+  const name = msgEl.dataset.name || '';
+  const color = msgEl.dataset.color || '#888888';
+  const av = msgEl.querySelector('.av');
+  setAvatarPresentation(av, name, color, avatarValue);
+  if(isTransparentAvatarValue(avatarValue)) msgEl.dataset.avatarMode = 'transparent';
+  else delete msgEl.dataset.avatarMode;
+  if(variantMode) msgEl.dataset.variant = '1';
+  else delete msgEl.dataset.variant;
+}
 
 // ── 頭貼邏輯 ──
 let currentTarget = null;
@@ -932,32 +1130,29 @@ function openAvatarUploadSingle(msgEl){
 }
 function applyAvatarData(name, dataURL, single, msgEl){
   if(single && msgEl){
-    const av = msgEl.querySelector('.av');
-    av.innerHTML = `<img src="${dataURL}" alt="${esc(name)}">`;
-    av.style.background = '';
-    av.style.color = '';
-    msgEl.dataset.variant = '1';
+    applyAvatarModeToMsg(msgEl, dataURL, true);
   } else {
     charData[name] = charData[name] || {};
     charData[name].avatar = dataURL;
     document.querySelectorAll(`.msg[data-name="${CSS.escape(name)}"]`).forEach(m => {
       if(m.dataset.variant === '1') return;
-      const av = m.querySelector('.av');
-      av.innerHTML = `<img src="${dataURL}" alt="${esc(name)}">`;
-      av.style.background = '';
-      av.style.color = '';
+      applyAvatarModeToMsg(m, dataURL, false);
     });
   }
+}
+function applyTransparentAvatar(name){
+  charData[name] = charData[name] || {color:'#888888',avatar:null,variants:[]};
+  charData[name].avatar = TRANSPARENT_AVATAR;
+  document.querySelectorAll(`.msg[data-name="${CSS.escape(name)}"]`).forEach(m => {
+    if(m.dataset.variant === '1') return;
+    applyAvatarModeToMsg(m, TRANSPARENT_AVATAR, false);
+  });
+  openCharManager();
 }
 function removeAvatar(name){
   if(charData[name]) charData[name].avatar = null;
   document.querySelectorAll(`.msg[data-name="${CSS.escape(name)}"]`).forEach(m => {
-    delete m.dataset.variant;
-    const color = m.dataset.color;
-    const av = m.querySelector('.av');
-    av.innerHTML = name[0];
-    av.style.background = color;
-    av.style.color = lumColor(color);
+    applyAvatarModeToMsg(m, null, false);
   });
   openCharManager();
 }
@@ -1040,12 +1235,12 @@ function deleteChar(name){
 
 
 // ── 分隔線區塊 ──
-function insertDivider(refMsg, mode){
-  const div = document.createElement('div');
-  div.className = 'msg-divider';
-  div.dataset.idx = String(Date.now());
-  div.innerHTML = '<hr>';
-  // 操作按鈕
+function attachDividerHandlers(div){
+  if(!div) return;
+  if(div.dataset.dividerReady === '1' && div.querySelector('.msg-actions')) return;
+  div.dataset.dividerReady = '1';
+  if(!div.querySelector('hr')) div.innerHTML = '<hr>';
+  div.querySelector('.msg-actions')?.remove();
   const actions = document.createElement('div');
   actions.className = 'msg-actions';
   const btnDel = document.createElement('button');
@@ -1076,6 +1271,13 @@ function insertDivider(refMsg, mode){
     isTop ? div.parentNode.insertBefore(_msgDragSrc,div) : div.parentNode.insertBefore(_msgDragSrc,div.nextSibling);
     _msgDragSrc=null; reindexMsgs(); rebuildChannelClusters();
   });
+}
+function insertDivider(refMsg, mode){
+  const div = document.createElement('div');
+  div.className = 'msg-divider';
+  div.dataset.idx = String(Date.now());
+  div.innerHTML = '<hr>';
+  attachDividerHandlers(div);
   // 插入位置
   const wrap = document.getElementById('wrap');
   if(!refMsg){ wrap.appendChild(div); }
@@ -1094,82 +1296,111 @@ function addNewChar(){
   openCharManager();
 }
 
-// ── 角色管理 Modal ──
-function openCharManager(){
-  const list = document.getElementById('char-list');
-  const names = [...new Set([...CHARS.map(c=>c.name), ...document.querySelectorAll('.msg[data-name]')].map ? CHARS.map(c=>c.name) : [])];
-  // 收集所有出現的角色名
+function isNarratorPriorityName(name){
+  const raw = String(name||'');
+  const compact = raw.replace(/[\s\u3000]+/g,'');
+  if(!compact) return true;
+  return /kp|gm|守密|筆者/i.test(compact);
+}
+
+function collectCharacterNames(){
   const allNames = [];
   CHARS.forEach(c=>{ if(!allNames.includes(c.name)) allNames.push(c.name); });
   document.querySelectorAll('.msg[data-name]').forEach(m=>{ const n=m.dataset.name; if(!allNames.includes(n)) allNames.push(n); });
-  // 包含透過「新增角色」加入的、尚未有訊息的角色（含空名稱）
   Object.keys(charData).forEach(n=>{ if(!allNames.includes(n)) allNames.push(n); });
-
-  list.innerHTML = allNames.map(name => {
-    const isAnon = !name || !name.trim(); // 空名稱角色
-    const displayName = isAnon ? '（空名稱旁白）' : name;
-    const cd = charData[name] || {};
-    const color = cd.color || (document.querySelector(`.msg[data-name="${CSS.escape(name)}"]`)?.dataset.color) || '#888888';
-    const avSrc = cd.avatar;
-    const cd2 = charData[name]||{};
-    const variants = cd2.variants||[];
-    const varHtml = variants.length ? variants.map((v,vi)=>`
-      <div style="display:flex;align-items:center;gap:6px;margin-top:4px;padding:3px 0;border-top:1px dashed var(--modal-border)">
-        <img src="${v.dataURL}" style="width:26px;height:26px;border-radius:50%;object-fit:contain">
-        <span style="flex:1;font-size:12px;color:var(--sub)">${esc(v.label)}</span>
-        <button class="mbtn mbtn-danger" style="font-size:11px;padding:3px 8px" onclick="removeVariant('${esc(name)}',${vi})">刪</button>
-      </div>`).join('') : '';
-    const avClickFn = `document.getElementById('modal-char').style.display='none';openAvatarUpload('${esc(name)}')`;
-    const avStyle = avSrc
-      ? `width:40px;height:40px;border-radius:50%;object-fit:contain;cursor:pointer;display:block`
-      : `width:40px;height:40px;border-radius:50%;background:${color};color:${lumColor(color)};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500;cursor:pointer;flex-shrink:0`;
-    const avHtml = avSrc
-      ? `<img src="${avSrc}" style="${avStyle}" title="點擊上傳默認頭貼" onclick="${avClickFn}">`
-      : `<div style="${avStyle}" title="點擊上傳默認頭貼" onclick="${avClickFn}">${esc(isAnon ? '?' : (name[0]||'?'))}</div>`;
-    const hasMsg = !!document.querySelector(`.msg[data-name="${CSS.escape(name)}"]`);
-    return `<div class="char-row">
-      <div class="char-row-top">
-        ${avHtml}
-        <input class="name-input" value="${esc(name)}" data-orig="${esc(name)}" placeholder="${isAnon ? '（空名稱旁白）' : ''}" onchange="applyCharName(this)" style="flex:1;min-width:80px">
-        <input type="color" title="名稱顏色" value="${color}" onchange="applyCharColor('${esc(name)}',this.value)" style="width:24px;height:24px;padding:1px;border:1px solid var(--modal-border);border-radius:3px;cursor:pointer;background:none;flex-shrink:0">
-      </div>
-      <div class="char-row-btns">
-        <button class="mbtn mbtn-ok" style="font-size:12px;padding:4px 10px" onclick="${avClickFn}">上傳頭貼</button>
-        <button class="mbtn" style="font-size:12px;padding:4px 10px;background:var(--btn-bg);color:var(--text)" onclick="promptAddVariant('${esc(name)}')">＋差分</button>
-        ${avSrc ? `<button class="mbtn mbtn-cancel" style="font-size:12px;padding:4px 10px" onclick="removeAvatar('${esc(name)}')">移除頭貼</button>` : ''}
-        ${!hasMsg ? `<button class="mbtn mbtn-danger" style="font-size:12px;padding:4px 10px" onclick="deleteChar('${esc(name)}')">刪除角色</button>` : ''}
-      </div>
-      <div class="char-row-txtcolor" style="margin-top:8px;align-items:center">
-        <span style="font-size:12px;color:var(--sub);flex-shrink:0">隱藏名字時的內文顏色</span>
-        <input type="color" id="txtcol-${isAnon ? '__anon__' : esc(name)}" title="內文顏色"
-          value="${txtColorMap[name]!==undefined ? (txtColorMap[name]||'#dbdee1') : color}"
-          onchange="setTxtColorForChar('${esc(name)}',this.value)"
-          style="width:24px;height:24px;padding:1px;border:1px solid var(--modal-border);border-radius:3px;cursor:pointer;background:none;flex-shrink:0">
-        <button class="mbtn" style="font-size:11px;padding:3px 8px;background:var(--btn-bg);color:var(--sub)"
-          onclick="setTxtColorForChar('${esc(name)}','');document.getElementById('txtcol-'+(${isAnon}?'__anon__':'${esc(name)}')).value=getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#dbdee1'">
-          CSS色
-        </button>
-        <button class="mbtn" style="font-size:11px;padding:3px 8px;background:var(--btn-bg);color:var(--sub)"
-          onclick="setTxtColorForChar('${esc(name)}','${color}');document.getElementById('txtcol-'+(${isAnon}?'__anon__':'${esc(name)}')).value='${color}'">
-          角色色
-        </button>
-      </div>
-      ${varHtml ? `<div style="padding-left:48px;margin-top:4px">${varHtml}</div>` : ''}
-    </div>`;
-  }).join('');
-  // 開啟角色管理時，若角色尚未設定內文顏色，預填角色顏色
-  allNames.forEach(n=>{
+  return allNames;
+}
+function sortCharacterNames(names){
+  return [...names].sort((a,b)=>{
+    const ap = isNarratorPriorityName(a) ? 0 : 1;
+    const bp = isNarratorPriorityName(b) ? 0 : 1;
+    if(ap !== bp) return ap - bp;
+    return 0;
+  });
+}
+function getCharacterResolvedColor(name){
+  const cd = charData[name] || {};
+  return cd.color || document.querySelector(`.msg[data-name="${CSS.escape(name)}"]`)?.dataset.color || '#888888';
+}
+function buildVariantRowsHtml(name, variants){
+  if(!variants.length) return '';
+  return variants.map((v,vi)=>`
+    <div style="display:flex;align-items:center;gap:6px;margin-top:4px;padding:3px 0;border-top:1px dashed var(--modal-border)">
+      <img src="${v.dataURL}" style="width:26px;height:26px;border-radius:50%;object-fit:contain">
+      <span style="flex:1;font-size:12px;color:var(--sub)">${esc(v.label)}</span>
+      <button class="mbtn mbtn-danger" style="${CHAR_SUB_BTN_STYLE}" onclick="removeVariant('${esc(name)}',${vi})">刪</button>
+    </div>`).join('');
+}
+function buildCharacterAvatarHtml(name, color, avSrc, isTransparentAvatar, avClickFn, isAnon){
+  const avStyle = avSrc
+    ? `width:40px;height:40px;border-radius:50%;object-fit:contain;cursor:pointer;display:block`
+    : `width:40px;height:40px;border-radius:50%;background:${color};color:${lumColor(color)};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500;cursor:pointer;flex-shrink:0`;
+  if(isTransparentAvatar){
+    return `<div style="width:40px;height:40px;border-radius:50%;border:1px dashed var(--modal-border);background:transparent;color:var(--sub);display:flex;align-items:center;justify-content:center;font-size:11px;cursor:pointer;flex-shrink:0" title="點擊設定默認頭貼" onclick="${avClickFn}">透明</div>`;
+  }
+  if(avSrc){
+    return `<img src="${avSrc}" style="${avStyle}" title="點擊上傳默認頭貼" onclick="${avClickFn}">`;
+  }
+  return `<div style="${avStyle}" title="點擊上傳默認頭貼" onclick="${avClickFn}">${esc(isAnon ? '?' : (name[0]||'?'))}</div>`;
+}
+function buildCharacterRowHtml(name){
+  const isAnon = !name || !name.trim();
+  const color = getCharacterResolvedColor(name);
+  const avSrc = charData[name]?.avatar;
+  const isTransparentAvatar = isTransparentAvatarValue(avSrc);
+  const variants = charData[name]?.variants || [];
+  const varHtml = buildVariantRowsHtml(name, variants);
+  const avClickFn = `document.getElementById('modal-char').style.display='none';openAvatarUpload('${esc(name)}')`;
+  const avHtml = buildCharacterAvatarHtml(name, color, avSrc, isTransparentAvatar, avClickFn, isAnon);
+  const hasMsg = !!document.querySelector(`.msg[data-name="${CSS.escape(name)}"]`);
+  return `<div class="char-row">
+    <div class="char-row-top">
+      ${avHtml}
+      <input class="name-input" value="${esc(name)}" data-orig="${esc(name)}" placeholder="${isAnon ? '（空名稱旁白）' : ''}" onchange="applyCharName(this)" style="flex:1;min-width:80px">
+      <input type="color" title="名稱顏色" value="${color}" onchange="applyCharColor('${esc(name)}',this.value)" style="${MINI_COLOR_INPUT_STYLE}">
+    </div>
+    <div class="char-row-btns">
+      <button class="mbtn" style="${CHAR_NEUTRAL_BTN_STYLE}" onclick="applyTransparentAvatar('${esc(name)}')">透明頭貼</button>
+      <button class="mbtn mbtn-ok" style="${CHAR_ACTION_BTN_STYLE}" onclick="${avClickFn}">上傳頭貼</button>
+      <button class="mbtn" style="${CHAR_NEUTRAL_BTN_STYLE}" onclick="promptAddVariant('${esc(name)}')">＋差分</button>
+      ${avSrc ? `<button class="mbtn mbtn-cancel" style="${CHAR_ACTION_BTN_STYLE}" onclick="removeAvatar('${esc(name)}')">移除頭貼</button>` : ''}
+      ${!hasMsg ? `<button class="mbtn mbtn-danger" style="${CHAR_ACTION_BTN_STYLE}" onclick="deleteChar('${esc(name)}')">刪除角色</button>` : ''}
+    </div>
+    <div class="char-row-txtcolor" style="margin-top:8px;align-items:center">
+      <span style="font-size:12px;color:var(--sub);flex-shrink:0">隱藏名字時的內文顏色</span>
+      <input type="color" id="txtcol-${isAnon ? '__anon__' : esc(name)}" title="內文顏色"
+        value="${txtColorMap[name]!==undefined ? (txtColorMap[name]||'#dbdee1') : color}"
+        onchange="setTxtColorForChar('${esc(name)}',this.value)"
+        style="${MINI_COLOR_INPUT_STYLE}">
+      <button class="mbtn" style="${CHAR_SUB_BTN_STYLE}"
+        onclick="setTxtColorForChar('${esc(name)}','');document.getElementById('txtcol-'+(${isAnon}?'__anon__':'${esc(name)}')).value=getComputedStyle(document.documentElement).getPropertyValue('--text').trim()||'#dbdee1'">
+        CSS色
+      </button>
+      <button class="mbtn" style="${CHAR_SUB_BTN_STYLE}"
+        onclick="setTxtColorForChar('${esc(name)}','${color}');document.getElementById('txtcol-'+(${isAnon}?'__anon__':'${esc(name)}')).value='${color}'">
+        角色色
+      </button>
+    </div>
+    ${varHtml ? `<div style="padding-left:48px;margin-top:4px">${varHtml}</div>` : ''}
+  </div>`;
+}
+function ensureDefaultTxtColors(names){
+  names.forEach(n=>{
     if(!(n in txtColorMap)){
-      const cd2 = charData[n]||{};
-      const c2 = cd2.color || (document.querySelector(`.msg[data-name="${CSS.escape(n)}"]`)?.dataset.color) || '#888888';
-      txtColorMap[n] = c2;
+      txtColorMap[n] = getCharacterResolvedColor(n);
     }
   });
-  // 空名稱角色預填
-  if(!('') in txtColorMap){
-    const c0 = charData['']?.color || (document.querySelector('.msg[data-name=""]')?.dataset.color) || '#888888';
-    txtColorMap[''] = c0;
+  if(!(('') in txtColorMap)){
+    txtColorMap[''] = charData['']?.color || document.querySelector('.msg[data-name=""]')?.dataset.color || '#888888';
   }
+}
+
+// ── 角色管理 Modal ──
+function openCharManager(){
+  const list = document.getElementById('char-list');
+  const allNames = sortCharacterNames(collectCharacterNames());
+  list.innerHTML = allNames.map(buildCharacterRowHtml).join('');
+  ensureDefaultTxtColors(allNames);
   document.getElementById('modal-char').style.display='flex';
 }
 
@@ -1184,7 +1415,7 @@ function applyCharColor(name, color){
     }
     // 無頭貼圖的 av 也更新底色
     const av = m.querySelector('.av');
-    if(!av.querySelector('img')){
+    if(!av.querySelector('img') && m.dataset.avatarMode !== 'transparent'){
       av.style.background = color;
       av.style.color = lumColor(color);
     }
@@ -1241,6 +1472,16 @@ function openAddMsg(refMsg, mode){
   document.getElementById('modal-add-title').textContent = '插入對話';
   document.getElementById('new-msg-name').value = '';
   document.getElementById('new-msg-text').value = '';
+  const channelSelect = document.getElementById('new-msg-channel');
+  const currentChannel = normalizeChannelLabel(addTarget?.refMsg?.dataset.channel || DEFAULT_CHANNEL);
+  const stats = getChannelStats();
+  const channelList = stats.length ? stats.map(({channel})=>channel) : [DEFAULT_CHANNEL];
+  if(!channelList.includes(currentChannel)) channelList.unshift(currentChannel);
+  channelSelect.innerHTML = channelList.map(channel=>{
+    const label = getChannelDisplayLabel(channel);
+    return `<option value="${escAttr(channel)}">${escHtml(label)}</option>`;
+  }).join('');
+  channelSelect.value = currentChannel;
   // 角色快選
   const picker = document.getElementById('char-picker');
   const allNames = [];
@@ -1294,7 +1535,7 @@ function confirmAddMsg(){
   const text = document.getElementById('new-msg-text').value;
   const cd = charData[name];
   const color = cd?.color || (document.querySelector(`.msg[data-name="${CSS.escape(name)}"]`)?.dataset.color) || '#888888';
-  const channel = addTarget?.refMsg?.dataset.channel || DEFAULT_CHANNEL;
+  const channel = normalizeChannelLabel(document.getElementById('new-msg-channel')?.value || addTarget?.refMsg?.dataset.channel || DEFAULT_CHANNEL);
   const msgEl = buildMsgEl(name, color, text, channel);
   const msgArea = document.getElementById('wrap');
   if(!addTarget || !addTarget.refMsg){
@@ -1308,11 +1549,7 @@ function confirmAddMsg(){
   resizeAvatar(msgEl);
   document.getElementById('modal-add').style.display='none';
   // 套用已有頭貼
-  if(cd?.avatar){
-    const av = msgEl.querySelector('.av');
-    av.innerHTML = `<img src="${cd.avatar}" alt="${esc(name)}">`;
-    av.style.background=''; av.style.color='';
-  }
+  if(cd?.avatar) applyAvatarModeToMsg(msgEl, cd.avatar, false);
   reindexMsgs();
   rebuildChannelClusters();
 }
@@ -1381,7 +1618,9 @@ function openVarPanel(msgEl, event){
 
   // 建立選項：「默認頭貼」+ 各差分 + 「上傳新頭貼」
   const defaultSrc = cd.avatar;
-  const defaultThumb = defaultSrc
+  const defaultThumb = isTransparentAvatarValue(defaultSrc)
+    ? `<div class="var-thumb" style="background:transparent;border:1px dashed var(--modal-border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--sub)">透明</div>`
+    : defaultSrc
     ? `<img class="var-thumb" src="${defaultSrc}">`
     : `<div class="var-thumb" style="background:${color};color:${lumColor(color)};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500">${esc(name[0]||'?')}</div>`;
 
@@ -1429,21 +1668,11 @@ function applyVarToMsg(varIdx){
 
   if(varIdx === null){
     // 恢復默認
-    delete varTarget.dataset.variant;
-    if(cd.avatar){
-      av.innerHTML = `<img src="${cd.avatar}" alt="${esc(name)}">`;
-      av.style.background=''; av.style.color='';
-    } else {
-      av.innerHTML = name[0]||'?';
-      av.style.background = color;
-      av.style.color = lumColor(color);
-    }
+    applyAvatarModeToMsg(varTarget, cd.avatar || null, false);
   } else {
     const v = (cd.variants||[])[varIdx];
     if(!v) return;
-    av.innerHTML = `<img src="${v.dataURL}" alt="${esc(v.label)}">`;
-    av.style.background=''; av.style.color='';
-    varTarget.dataset.variant = '1';
+    applyAvatarModeToMsg(varTarget, v.dataURL, true);
   }
   closeVarPanel();
   resizeAvatar(varTarget);
@@ -1634,6 +1863,12 @@ function syncFmtColorFromNative(value){
   if(hexInput) hexInput.value = normalized;
   syncFmtColorFromHex(normalized);
 }
+function applyFmtColorFromHex(value){
+  const normalized = normalizeHexColor(value);
+  if(!normalized) return;
+  syncFmtColorFromHex(normalized);
+  fmtTextColor(normalized);
+}
 function applyFmtColorFromNative(value){
   const normalized = normalizeHexColor(value);
   if(!normalized) return;
@@ -1762,8 +1997,29 @@ function openFmtColorPicker(){
   if(hexInput) hexInput.value = currentHex;
   if(nativeInput) nativeInput.value = currentHex.toLowerCase();
   syncFmtColorFromHex(currentHex);
+  renderFmtColorSuggestions();
   fmtColorPanel.classList.add('open');
   positionFmtColorPanel();
+}
+function renderFmtColorSuggestions(){
+  const wrap = document.getElementById('fmt-color-suggest');
+  if(!wrap) return;
+  const items = getCharacterColorSuggestions();
+  if(!items.length){
+    wrap.innerHTML = '';
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+  wrap.innerHTML = items.map(item=>
+    `<button type="button" class="fmt-swatch" title="${escHtml(item.name || '（空名稱旁白）')}" style="background:${item.color}" onclick="applyFmtSuggestedColor('${item.color}')"></button>`
+  ).join('');
+}
+function applyFmtSuggestedColor(color){
+  const normalized = normalizeHexColor(color);
+  if(!normalized) return;
+  syncFmtColorFromHex(normalized);
+  fmtTextColor(normalized);
 }
 function restoreFmtColorSelection(){
   if(!_fmtColorRange) return null;
@@ -2049,25 +2305,120 @@ function resizeAvatars(){ document.querySelectorAll('.msg').forEach(resizeAvatar
 document.addEventListener('DOMContentLoaded', resizeAvatars);
 window.addEventListener('resize', resizeAvatars);
 
-// ── 輸出閱覽版 ──
-function exportReadOnly(){
-  const title=document.querySelector('#topbar h1').textContent;
-  const isDark=document.documentElement.getAttribute('data-theme')!=='light';
-  const showAv=_avVisible;
-  const showNm=_nmVisible;
-  const useTxtColor=false; // 文字顏色由各角色獨立設定
-
-  // ── 1. Avatar Registry：掃描所有訊息，每張圖只記錄一次 ──
-  const registry={};   // dataURL -> cssClass
-  const msgMeta=new WeakMap(); // msgEl -> {cls|null, bg, fc, first, size}
-  let cnt=0;
+function downloadReadOnlyHtml(title, html){
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=title+'_閱覽版.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function openExportPreview(){
+  const overlay=document.getElementById('export-preview-overlay');
+  const frame=document.getElementById('export-preview-frame');
+  frame.srcdoc = buildReadOnlyHtml(true);
+  overlay.style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function closeExportPreview(){
+  const overlay=document.getElementById('export-preview-overlay');
+  const frame=document.getElementById('export-preview-frame');
+  overlay.style.display='none';
+  frame.srcdoc='<!DOCTYPE html><html><body></body></html>';
+  document.body.style.overflow='';
+}
+function getVisibleExportNodes(){
+  const wrap = document.getElementById('wrap');
+  if(!wrap) return [];
+  const topbar = document.getElementById('topbar');
+  const fmtBar = document.getElementById('fmt-bar');
+  return Array.from(wrap.children).filter(el=>el!==topbar && el!==fmtBar && el.style.display!=='none');
+}
+function serializeEditorFlowHtml(){
+  const clone = document.createElement('div');
+  getVisibleExportNodes().forEach(node=>clone.appendChild(node.cloneNode(true)));
+  unwrapChannelClusters(clone);
+  clone.querySelector('#topbar')?.remove();
+  clone.querySelector('#fmt-bar')?.remove();
+  clone.querySelectorAll('.msg-actions,.av-btn').forEach(el=>el.remove());
+  clone.querySelectorAll('[data-divider-ready]').forEach(el=>el.removeAttribute('data-divider-ready'));
+  return Array.from(clone.children).map(el=>el.outerHTML).join('\n');
+}
+function buildReadOnlyEditorMeta(title){
+  const visibleMsgs = [];
+  const seenMsg = new Set();
+  getVisibleExportNodes().forEach(node=>{
+    if(node.classList.contains('channel-cluster')){
+      node.querySelectorAll('.msg').forEach(msg=>{
+        if(!seenMsg.has(msg)) { seenMsg.add(msg); visibleMsgs.push(msg); }
+      });
+    } else if(node.classList.contains('msg')){
+      if(!seenMsg.has(node)) { seenMsg.add(node); visibleMsgs.push(node); }
+    }
+  });
+  const chars = [];
+  const seen = new Set();
+  visibleMsgs.forEach(msg=>{
+    const name = msg.dataset.name || '';
+    if(seen.has(name)) return;
+    seen.add(name);
+    chars.push({name, color:msg.dataset.color || charData[name]?.color || '#888888'});
+  });
+  const visibleNames = new Set(chars.map(c=>c.name));
+  const visibleChannels = new Set(visibleMsgs.map(msg=>normalizeChannelLabel(msg.dataset.channel || '').toLowerCase()));
+  const charMeta = {};
+  Object.entries(charData).forEach(([name, data])=>{
+    if(!visibleNames.has(name)) return;
+    charMeta[name] = {
+      color: data?.color || '#888888',
+      avatar: data?.avatar || null,
+      variants: Array.isArray(data?.variants) ? data.variants.map(v=>({label:v.label || '', dataURL:v.dataURL || ''})) : []
+    };
+  });
+  const nextChannelColorMap = {};
+  Object.entries(channelColorMap).forEach(([key,val])=>{ if(visibleChannels.has(key)) nextChannelColorMap[key] = val; });
+  const nextChannelGroupModeMap = {};
+  Object.entries(channelGroupModeMap).forEach(([key,val])=>{ if(visibleChannels.has(key)) nextChannelGroupModeMap[key] = val; });
+  const nextChannelLabelMap = {};
+  Object.entries(channelLabelMap).forEach(([key,val])=>{ if(visibleChannels.has(key)) nextChannelLabelMap[key] = val; });
+  const nextChannelDescMap = {};
+  Object.entries(channelDescMap).forEach(([key,val])=>{ if(visibleChannels.has(key)) nextChannelDescMap[key] = val; });
+  return {
+    version: 1,
+    title,
+    chars,
+    msgsHtml: serializeEditorFlowHtml(),
+    charData: charMeta,
+    txtColorMap: Object.fromEntries(Object.entries(txtColorMap).filter(([name])=>visibleNames.has(name))),
+    channelColorMap: nextChannelColorMap,
+    channelGroupModeMap: nextChannelGroupModeMap,
+    channelLabelMap: nextChannelLabelMap,
+    channelDescMap: nextChannelDescMap,
+    channelOrder: channelOrder.filter(key=>visibleChannels.has(key))
+  };
+}
+function buildReadOnlyEditorMetaScript(title){
+  const raw = JSON.stringify(buildReadOnlyEditorMeta(title))
+    .replace(/</g,'\\u003c')
+    .replace(/>/g,'\\u003e')
+    .replace(/&/g,'\\u0026')
+    .replace(/<\/script/gi,'<\\/script');
+  return '<'+'script id="trpg-editor-meta" type="application/json">'+raw+'<'+'/script>';
+}
+function buildReadOnlyAvatarRegistry(){
+  const registry = {};
+  const msgMeta = new WeakMap();
+  let cnt = 0;
   document.querySelectorAll('.msg').forEach(msg=>{
     const av=msg.querySelector('.av');
     const img=av&&av.querySelector('img');
     const size=(av&&av.style.height)||'40px';
-    const name=(msg.querySelector('.nm')||{}).textContent||(msg.dataset.name||'');
+    const rawName=(msg.querySelector('.nm')||{}).textContent||(msg.dataset.name||'');
+    const name=String(rawName).replace(/[\s\u3000]+/g,'') ? rawName : '';
     const color=msg.dataset.color||'#888888';
-    if(img&&img.src){
+    if(msg.dataset.avatarMode === 'transparent'){
+      msgMeta.set(msg,{cls:null,size,transparent:true});
+    } else if(img&&img.src){
       if(!registry[img.src]) registry[img.src]='avreg'+(cnt++);
       msgMeta.set(msg,{cls:registry[img.src],size});
     } else {
@@ -2076,84 +2427,92 @@ function exportReadOnly(){
       msgMeta.set(msg,{cls:null,size,bg,fc,first:name[0]||'?'});
     }
   });
-
-  // ── 2. 產生 avatar CSS（每張圖只一條） ──
+  return {registry,msgMeta};
+}
+function buildAvatarCss(registry){
   let avCss='';
   for(const [src,cls] of Object.entries(registry)){
     avCss+=`.${cls}{background-image:url("${src}");background-size:contain;background-repeat:no-repeat;background-position:center}\n`;
   }
-
-  // ── 4. 組裝閱覽版 HTML ──
-  const {tocBtnHtml,tocPanelHtml,tocJs,items:tocExportItems} = buildTocExport(isDark);
-  const tocPanelCss=tocExportItems&&tocExportItems.length?`
-#toc-panel{position:fixed;right:0;top:50%;transform:translateY(-50%);width:10px;height:auto;max-height:80vh;background:var(--border);border-radius:6px 0 0 6px;z-index:200;display:flex;flex-direction:row;overflow:hidden;transition:width .22s cubic-bezier(.4,0,.2,1),background .15s;cursor:pointer}
-#toc-panel:hover{width:210px;background:var(--topbar);border:1px solid var(--border);border-right:none;box-shadow:-4px 0 20px rgba(0,0,0,.3);cursor:default;border-radius:10px 0 0 10px}
-#toc-inner{opacity:0;width:210px;min-width:210px;display:flex;flex-direction:column;transition:opacity .18s .06s;pointer-events:none;overflow:hidden}
-#toc-panel:hover #toc-inner{opacity:1;pointer-events:auto}
-#toc-hdr{padding:10px 14px 8px;font-size:12px;font-weight:500;color:var(--sub);border-bottom:1px solid var(--border);letter-spacing:.05em;text-transform:uppercase;flex-shrink:0}
-#toc-list{overflow-y:auto;padding:6px 0;max-height:60vh}
-.toc-item{padding:6px 14px;cursor:pointer;font-size:13px;color:var(--text);border-radius:6px;margin:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.toc-item:hover{background:var(--hover)}
-`:'';
-
+  return avCss;
+}
+function buildReadOnlyPreviewConfig(previewMode, isDark){
   const sun='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
   const moon='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>';
-  const themeBtn=isDark?sun+'淺色':moon+'深色';
-  const scriptOpen='<'+'script>';
-  const scriptClose='<'+'/script>';
-
-  function buildViewMsgRow(el){
-    const idx = el.dataset.idx;
-    const channel = normalizeChannelLabel(el.dataset.channel||'');
-    if(isChannelHidden(channel)) return '';
-    const nmEl = el.querySelector('.nm');
-    const name = nmEl ? nmEl.textContent : (el.dataset.name||'');
-    const color = el.dataset.color||'#888888';
-    const txtHtml = (el.querySelector('.txt')||{}).innerHTML||'';
-    const info = msgMeta.get(el);
-    const s = info ? info.size : '40px';
-    const _avEl = showAv
-      ? (info && info.cls
-          ? `<div class="avc ${info.cls}" style="width:${s};height:${s}"></div>`
-          : `<div class="avc avt" style="width:${s};height:${s};background:${info?.bg||color};color:${info?.fc||'#fff'}">${escHtml(info?.first||(name[0]||'?'))}</div>`)
-      : '';
-    const nmHtml = name
-      ? `<span class="nm" style="color:${color}">${escHtml(name)}</span>`
-      : `<span class="nm" style="color:${color}"></span>`;
-    const _tocAnc = idx ? ` data-toc-anchor="msg-${idx}"` : '';
-    const _rowClass = showAv ? 'msg-row' : 'msg-row msg-row-noav';
-    const _nmRowClass = showNm ? 'nmrow' : 'nmrow nmrow-hidden';
-    const _txtEl = el.querySelector('.txt');
-    const _appliedColor = _txtEl ? _txtEl.style.color : '';
-    const _txtStyle = _appliedColor ? `color:${_appliedColor};` : '';
-    return `<div class="${_rowClass}" data-char="${escHtml(name)}" data-channel="${escHtml(channel)}"${_tocAnc}>${_avEl ? `<div class="avcol">${_avEl}</div>` : ''}<div class="bodycol"><div class="${_nmRowClass}">${nmHtml}</div><div class="txta" style="${_txtStyle}">${txtHtml}</div></div></div>\n`;
-  }
-
-  const flowEls = Array.from(document.getElementById('wrap').children).filter(el=>el.id!=='topbar' && el.id!=='fmt-bar');
+  return {
+    sun,
+    moon,
+    themeBtn: isDark ? sun+'淺色' : moon+'深色',
+    previewBtnHtml: previewMode ? `<button class="tbtn" onclick="_pvClose()">返回編輯器</button><button class="tbtn" style="background:#5865f2;color:#fff" onclick="_pvExport()">確認輸出 HTML</button>` : '',
+    previewCss: previewMode ? `
+.nmrow:not(.nmrow-hidden){display:flex;align-items:center;gap:8px}
+.nmrow.nmrow-hidden{display:none}
+.pv-edit{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border:none;border-radius:999px;background:rgba(88,101,242,.16);color:#b7c0ff;font-size:12px;cursor:pointer;font-family:inherit;opacity:0;pointer-events:none;transition:opacity .15s;background-clip:padding-box}
+.msg-row:hover .pv-edit{opacity:1;pointer-events:auto}
+.pv-edit:hover{background:rgba(88,101,242,.24)}
+` : '',
+    previewJs: previewMode ? `
+function _pvClose(){window.parent.postMessage({type:'trpg-preview-close'},'*');}
+function _pvExport(){window.parent.postMessage({type:'trpg-preview-export'},'*');}
+function _pvEdit(idx){window.parent.postMessage({type:'trpg-preview-edit',idx:idx},'*');}
+` : ''
+  };
+}
+function buildReadOnlyViewMsgRow(el, ctx){
+  const {showAv,showNm,previewMode,msgMeta} = ctx;
+  const idx = el.dataset.idx;
+  const channel = normalizeChannelLabel(el.dataset.channel||'');
+  if(isChannelHidden(channel)) return '';
+  const nmEl = el.querySelector('.nm');
+  const rawName = nmEl ? nmEl.textContent : (el.dataset.name||'');
+  const name = String(rawName).replace(/[\s\u3000]+/g,'') ? rawName : '';
+  const color = el.dataset.color||'#888888';
+  const txtHtml = (el.querySelector('.txt')||{}).innerHTML||'';
+  const info = msgMeta.get(el);
+  const s = info ? info.size : '40px';
+  const avEl = showAv
+    ? (info && info.cls
+        ? `<div class="avc ${info.cls}" style="width:${s};height:${s}"></div>`
+        : info?.transparent
+        ? `<div class="avc avt" style="width:${s};height:${s};background:transparent;color:transparent"></div>`
+        : `<div class="avc avt" style="width:${s};height:${s};background:${info?.bg||color};color:${info?.fc||'#fff'}">${escHtml(info?.first||(name[0]||'?'))}</div>`)
+    : '';
+  const nmHtml = name
+    ? `<span class="nm" style="color:${color}">${escHtml(name)}</span>`
+    : `<span class="nm" style="color:${color}"></span>`;
+  const tocAnc = idx ? ` data-toc-anchor="msg-${idx}"` : '';
+  const rowClass = `${showAv ? 'msg-row' : 'msg-row msg-row-noav'}${name ? '' : ' is-unnamed'}`;
+  const nmRowClass = showNm ? 'nmrow' : 'nmrow nmrow-hidden';
+  const txtEl = el.querySelector('.txt');
+  const appliedColor = txtEl ? txtEl.style.color : '';
+  const txtStyle = appliedColor ? `color:${appliedColor};` : '';
+  const editBtn = previewMode && idx ? `<button class="pv-edit" onclick="_pvEdit('${escHtml(idx)}')">返回編輯</button>` : '';
+  return `<div class="${rowClass}" data-char="${escHtml(name)}" data-channel="${escHtml(channel)}"${tocAnc}>${avEl ? `<div class="avcol">${avEl}</div>` : ''}<div class="bodycol"><div class="${nmRowClass}">${nmHtml}${editBtn}</div><div class="txta" style="${txtStyle}">${txtHtml}</div></div></div>\n`;
+}
+function buildReadOnlyFlowContent(flowEls, ctx){
   let combinedRows = '';
   flowEls.forEach(el => {
     if(el.classList.contains('channel-cluster')){
       const channel = normalizeChannelLabel(el.dataset.channel||'');
       if(isChannelHidden(channel)) return;
       const palette = getChannelPalette(channel);
-      const rows = Array.from(el.children).filter(child=>child.classList.contains('msg')).map(buildViewMsgRow).join('');
+      const desc = getChannelDescription(channel);
+      const rows = Array.from(el.children).filter(child=>child.classList.contains('msg')).map(child=>buildReadOnlyViewMsgRow(child, ctx)).join('');
       if(!rows.trim()) return;
-      combinedRows += `<div class="channel-cluster-vw" data-channel="${escHtml(channel)}" style="--channel-strong:${palette.strong}"><div class="cluster-content-vw">${rows}</div></div>\n`;
+      const clusterTitle = desc ? ` title="${escHtml(desc)}"` : '';
+      combinedRows += `<div class="channel-cluster-vw" data-channel="${escHtml(channel)}" style="--channel-strong:${palette.strong}"${clusterTitle}><div class="cluster-content-vw">${rows}</div></div>\n`;
     } else if(el.classList.contains('msg-divider')){
       const tocAnc = el.dataset.idx ? ` data-toc-anchor="msg-${el.dataset.idx}"` : '';
-      combinedRows += `<div class="vw-divider"${tocAnc}><hr></div>
-`;
+      combinedRows += `<div class="vw-divider"${tocAnc}><hr></div>\n`;
     } else if(el.classList.contains('msg-cg')){
-      // CG 區塊
       const cgImg = el.querySelector('.cg-img');
       if(!cgImg) return;
-      const _cgWrap = el.querySelector('.cg-wrap');
-      const _cgDataW = _cgWrap?.dataset.w;
-      const cgW = _cgDataW ? (_cgDataW + 'px') : (_cgWrap?.style.width || '100%');
+      const cgWrap = el.querySelector('.cg-wrap');
+      const cgDataW = cgWrap?.dataset.w;
+      const cgW = cgDataW ? (cgDataW + 'px') : (cgWrap?.style.width || '100%');
       const tocAnc = el.dataset.idx ? ` data-toc-anchor="cg-${el.dataset.idx}"` : '';
       const isSpoiler = el.dataset.spoiler === '1';
       if(isSpoiler){
-        // 爆雷：模糊遮罩版本
         combinedRows += `<div class="msg-cg-row"${tocAnc} style="display:flex;justify-content:center;padding:12px 20px">
         <div style="position:relative;width:${cgW};max-width:100%;border-radius:6px;overflow:hidden">
           <img src="${cgImg.src}" style="width:100%;height:auto;display:block;filter:blur(50px);-webkit-user-drag:none" draggable="false" oncontextmenu="return false" alt="">
@@ -2172,9 +2531,65 @@ function exportReadOnly(){
       </div>\n`;
       }
     } else if(el.classList.contains('msg')) {
-      combinedRows += buildViewMsgRow(el);
+      combinedRows += buildReadOnlyViewMsgRow(el, ctx);
     }
   });
+  return combinedRows;
+}
+
+function jumpToEditorIdx(idx){
+  if(!idx) return;
+  const sel = `.msg[data-idx="${CSS.escape(String(idx))}"], .msg-divider[data-idx="${CSS.escape(String(idx))}"], .msg-cg[data-idx="${CSS.escape(String(idx))}"]`;
+  const el = document.querySelector(sel);
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  el.classList.add('preview-jump');
+  setTimeout(()=>el.classList.remove('preview-jump'), 1500);
+}
+window.addEventListener('message', e=>{
+  const data = e.data || {};
+  if(data.type === 'trpg-preview-close'){
+    closeExportPreview();
+  }else if(data.type === 'trpg-preview-edit'){
+    closeExportPreview();
+    jumpToEditorIdx(data.idx);
+  }else if(data.type === 'trpg-preview-export'){
+    exportReadOnly();
+  }
+});
+
+// ── 輸出閱覽版 ──
+function buildReadOnlyHtml(previewMode=false){
+  const title=document.querySelector('#topbar h1').textContent;
+  const isDark=document.documentElement.getAttribute('data-theme')!=='light';
+  const showAv=_avVisible;
+  const showNm=_nmVisible;
+  const useTxtColor=false; // 文字顏色由各角色獨立設定
+
+  const {registry,msgMeta} = buildReadOnlyAvatarRegistry();
+  const avCss = buildAvatarCss(registry);
+
+  // ── 4. 組裝閱覽版 HTML ──
+  const {tocBtnHtml,tocPanelHtml,tocJs,items:tocExportItems} = buildTocExport(isDark);
+  const tocPanelCss=tocExportItems&&tocExportItems.length?`
+#toc-panel{position:fixed;right:0;top:50%;transform:translateY(-50%);width:10px;height:auto;max-height:80vh;background:var(--border);border-radius:6px 0 0 6px;z-index:200;display:flex;flex-direction:row;overflow:hidden;transition:width .22s cubic-bezier(.4,0,.2,1),background .15s;cursor:pointer}
+#toc-panel:hover{width:210px;background:var(--topbar);border:1px solid var(--border);border-right:none;box-shadow:-4px 0 20px rgba(0,0,0,.3);cursor:default;border-radius:10px 0 0 10px}
+#toc-inner{opacity:0;width:210px;min-width:210px;display:flex;flex-direction:column;transition:opacity .18s .06s;pointer-events:none;overflow:hidden}
+#toc-panel:hover #toc-inner{opacity:1;pointer-events:auto}
+#toc-hdr{padding:10px 14px 8px;font-size:12px;font-weight:500;color:var(--sub);border-bottom:1px solid var(--border);letter-spacing:.05em;text-transform:uppercase;flex-shrink:0}
+#toc-list{overflow-y:auto;padding:6px 0;max-height:60vh}
+.toc-item{padding:6px 14px;cursor:pointer;font-size:13px;color:var(--text);border-radius:6px;margin:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toc-item:hover{background:var(--hover)}
+`:'';
+
+  const {sun,moon,themeBtn,previewBtnHtml,previewCss,previewJs} = buildReadOnlyPreviewConfig(previewMode, isDark);
+  const editorMetaScript = buildReadOnlyEditorMetaScript(title);
+  const scriptOpen='<'+'script>';
+  const scriptClose='<'+'/script>';
+
+  const flowEls = Array.from(document.getElementById('wrap').children).filter(el=>el.id!=='topbar' && el.id!=='fmt-bar');
+  const ctx = {showAv,showNm,previewMode,msgMeta,useTxtColor};
+  const combinedRows = buildReadOnlyFlowContent(flowEls, ctx);
 
   const out=`<!DOCTYPE html>
 <html lang="zh-TW">
@@ -2188,6 +2603,10 @@ function exportReadOnly(){
 :root{--bg:#1e1f22;--chat:#313338;--text:#dbdee1;--border:#232428;--topbar:#2b2d31;--channel-cluster-bg:#2b2d31}
 [data-theme=light]{--bg:#f2f3f5;--chat:#fff;--text:#2e3338;--border:#e3e5e8;--topbar:#fff;--channel-cluster-bg:#eceff3}
 body{background:var(--bg);font-family:'Noto Sans TC',sans-serif;min-height:100vh;color:var(--text);transition:background .2s,color .2s}
+body.nm-hidden-view .msg-row.is-unnamed.unnamed-loose .txta{padding-bottom:0}
+body.nm-hidden-view .msg-row.is-unnamed.unnamed-after-cluster .txta{padding-top:0}
+body.nm-hidden-view .msg-row.speaker-break{padding-top:30px}
+body.nm-hidden-view .channel-cluster-vw{margin-top:32px;margin-bottom:38px}
 #wrap{max-width:860px;margin:0 auto;background:var(--chat);min-height:100vh;transition:background .2s}
 #topbar{padding:10px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;position:sticky;top:0;background:var(--topbar);z-index:10}
 #topbar h1{font-size:15px;font-weight:500;flex:1}
@@ -2196,15 +2615,17 @@ body{background:var(--bg);font-family:'Noto Sans TC',sans-serif;min-height:100vh
 .msg-row-noav{gap:0;padding-left:36px}
 .channel-cluster-vw{margin:0;background:var(--channel-cluster-bg);position:relative;padding-left:4px;overflow:hidden}
 .channel-cluster-vw::before{content:"";position:absolute;left:0;top:13px;bottom:13px;width:4px;background:var(--channel-strong,#8fb4e8);border-radius:0 4px 4px 0}
-.channel-cluster-vw .msg-row{padding-left:16px}
-.nmrow-hidden{display:none}
+.channel-cluster-vw .msg-row{padding-top:18px;padding-bottom:24px;padding-left:16px}
 .avcol{flex-shrink:0;margin-top:5px}
 .avc{border-radius:50%;flex-shrink:0}
 .avt{display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500}
 .bodycol{flex:1;min-width:0}
 .nmrow{margin-bottom:3px;min-height:1.4em}
+.nmrow-hidden{display:none}
 .nm{font-size:15px;font-weight:500;min-height:1.4em;display:inline-block}
 .txta{font-size:15px;color:var(--text);line-height:1.6}
+.msg-row.is-unnamed.unnamed-after-cluster .txta{padding-top:28px}
+.msg-row.is-unnamed.unnamed-loose .txta{padding-bottom:28px}
 .txta p{margin:0;line-height:inherit;white-space:break-spaces}
 .ws-only{display:inline-block;min-width:1ch;white-space:break-spaces}
 .theme-text-color{color:var(--sel-dark)!important}
@@ -2214,13 +2635,14 @@ body{background:var(--bg);font-family:'Noto Sans TC',sans-serif;min-height:100vh
 .txta a:hover{opacity:1}
 .vw-divider{padding:8px 36px}.vw-divider hr{border:none;border-top:1px solid var(--border)}
 
-${avCss}${tocPanelCss}</style>
+${previewCss}${avCss}${tocPanelCss}</style>
 </head>
-<body data-theme="${isDark?'':'light'}">
+<body data-theme="${isDark?'':'light'}" class="${showNm?'':'nm-hidden-view'}">
 <div id="wrap">
 <div id="topbar">
   <h1>${escHtml(title)}</h1>
   <button class="tbtn" onclick="_t()" id="tth">${themeBtn}</button>
+  ${previewBtnHtml}
   ${tocBtnHtml}
 </div>
 ${combinedRows}
@@ -2237,17 +2659,47 @@ function _t(){_d=!_d;document.body.setAttribute('data-theme',_d?'':'light');var 
 function _openLb(img){var lb=document.getElementById('vw-lb');lb.style.display='flex';lb.querySelector('img').src=img.src;}
 function _revealSp(overlay,src){overlay.style.display='none';var wrap=overlay.parentNode;var img=wrap.querySelector('img');img.style.filter='';img.style.cursor='zoom-in';img.onclick=function(){_openLb(this);};}
 function _closeLb(){var lb=document.getElementById('vw-lb');lb.style.display='none';lb.querySelector('img').src='';}
+function _markUnnamedRows(){
+  var rows=Array.from(document.querySelectorAll('.msg-row'));
+  rows.forEach(function(row,idx){
+    if(!row.classList.contains('is-unnamed')) return;
+    row.classList.remove('unnamed-loose');
+    row.classList.remove('unnamed-after-cluster');
+    var next=rows[idx+1];
+    if(!next || !next.classList.contains('is-unnamed')) row.classList.add('unnamed-loose');
+    var prevTop=row.previousElementSibling;
+    if(prevTop && prevTop.classList.contains('channel-cluster-vw')) row.classList.add('unnamed-after-cluster');
+  });
+}
+function _markSpeakerBreaks(){
+  var rows=Array.from(document.querySelectorAll('.msg-row'));
+  rows.forEach(function(row){ row.classList.remove('speaker-break'); });
+  var prevName=null;
+  rows.forEach(function(row,idx){
+    var name=row.getAttribute('data-char')||'';
+    var parent=row.parentElement;
+    var firstInCluster=parent && parent.classList.contains('cluster-content-vw') && parent.firstElementChild===row;
+    var prevRow=rows[idx-1];
+    var afterCluster=!!(prevRow && prevRow.parentElement && prevRow.parentElement.classList.contains('cluster-content-vw') && parent && !parent.classList.contains('cluster-content-vw'));
+    if(prevName!==null && name!==prevName && !firstInCluster && !afterCluster) row.classList.add('speaker-break');
+    prevName=name;
+  });
+}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')_closeLb();});
+_markUnnamedRows();
+_markSpeakerBreaks();
+${previewJs}
 ${scriptClose}
+${editorMetaScript}
 </body>
 </html>`;
 
-  const blob=new Blob([out],{type:'text/html;charset=utf-8'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=title+'_閱覽版.html';
-  a.click();
-  URL.revokeObjectURL(a.href);
+  return out;
+}
+function exportReadOnly(){
+  const title=document.querySelector('#topbar h1').textContent;
+  downloadReadOnlyHtml(title, buildReadOnlyHtml(false));
+  closeExportPreview();
 }
 
 
@@ -2524,7 +2976,7 @@ function tocScan(){
   const msgs = [...document.querySelectorAll('.msg')];
   const found = [];
 
-  // ── 條件1：是 KP / 旁白角色（名稱含 kp 或為空）──
+  // ── 條件1：是 KP / 旁白角色（名稱含 kp / gm / 守密 / 筆者 或為空）──
   function isNarrator(msg){
     const name = (msg.dataset.name||'').trim();
     if(!name) return true;
@@ -2651,6 +3103,33 @@ function buildTocExport(){
 function setStatus(msg,isErr){const el=document.getElementById('upload-status');if(el){el.textContent=msg;el.style.color=isErr?'#ed4245':'var(--sub)';}}
 function handleDrop(e){const f=e.dataTransfer.files[0];if(f)readLogFile(f);}
 function handleFileInput(input){if(input.files[0])readLogFile(input.files[0]);}
+function parseEmbeddedEditorMeta(doc){
+  const metaEl = doc.getElementById('trpg-editor-meta');
+  if(!metaEl) return null;
+  try{
+    const parsed = JSON.parse(metaEl.textContent || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  }catch(err){
+    console.warn('embedded editor meta parse failed', err);
+    return null;
+  }
+}
+function getCharsFromMeta(meta){
+  if(Array.isArray(meta?.chars) && meta.chars.length){
+    return meta.chars.map(c=>({name:c.name || '', color:c.color || '#888888'}));
+  }
+  if(meta?.charData && typeof meta.charData === 'object'){
+    return Object.entries(meta.charData).map(([name,data])=>({name, color:data?.color || '#888888'}));
+  }
+  return [];
+}
+function parseEmbeddedReadOnlyFormat(doc,filename,meta){
+  const title=(doc.querySelector('#topbar h1')||doc.querySelector('h1'))?.textContent?.trim()||meta?.title||filename.replace(/\.html?$/i,'');
+  const chars=getCharsFromMeta(meta);
+  const msgsHtml=typeof meta?.msgsHtml === 'string' ? meta.msgsHtml : '';
+  const msgCount=(msgsHtml.match(/class="msg(?:\s|")/g)||[]).length;
+  return {title,chars,msgsHtml,msgCount,meta};
+}
 function readLogFile(file){
   if(!file.name.match(/\.html?$/i)){setStatus('請選擇 .html 檔案',true);return;}
   setStatus('讀取中…');
@@ -2678,9 +3157,11 @@ function parseLogHtml(html,filename){
   const parser=new DOMParser();
   const doc=parser.parseFromString(html,'text/html');
   const isEditorSelf=!!doc.getElementById('page-upload');
+  const embeddedMeta=parseEmbeddedEditorMeta(doc);
   const editorMsgs=doc.querySelectorAll('.msg[data-idx]');
   if(editorMsgs.length>0&&!isEditorSelf)return parseEditorFormat(doc,editorMsgs,filename);
   if(isEditorSelf)throw new Error('請上傳 ccfolia 匯出的 HTML，而非編輯器本身');
+  if(embeddedMeta?.msgsHtml)return parseEmbeddedReadOnlyFormat(doc,filename,embeddedMeta);
   const ccMsgs=[...doc.querySelectorAll('p[style*="color"]')].filter(p=>p.querySelectorAll('span').length>=3);
   if(ccMsgs.length>0)return parseCcfoliaFormat(doc,ccMsgs,filename);
   const viewMsgs=doc.querySelectorAll('.msg-row');
@@ -2716,6 +3197,8 @@ function parseCcfoliaFormat(doc,pMsgs,filename){
   return{title,chars,msgsHtml:parsedMsgs.join('\n'),msgCount:parsedMsgs.length};
 }
 function parseViewFormat(doc,rows,filename){
+  const embeddedMeta = parseEmbeddedEditorMeta(doc);
+  if(embeddedMeta?.msgsHtml) return parseEmbeddedReadOnlyFormat(doc,filename,embeddedMeta);
   const title=(doc.querySelector('#topbar h1')||doc.querySelector('h1'))?.textContent?.trim()||filename.replace(/\.html?$/i,'');
   const chars=[],seen={},parsedMsgs=[];let idx=0;
   rows.forEach(row=>{
@@ -2768,13 +3251,44 @@ function convertBrToParagraphs(html){
   return parts.map(p=>'<p>'+preserveHtmlWhitespace(p)+'</p>').join('<p><br></p>');
 }
 function escAttr(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function resetImportedEditorState(){
+  CHARS.length = 0;
+  Object.keys(charData).forEach(k=>delete charData[k]);
+  Object.keys(txtColorMap).forEach(k=>delete txtColorMap[k]);
+  Object.keys(channelColorMap).forEach(k=>delete channelColorMap[k]);
+  Object.keys(channelGroupModeMap).forEach(k=>delete channelGroupModeMap[k]);
+  Object.keys(channelLabelMap).forEach(k=>delete channelLabelMap[k]);
+  Object.keys(channelDescMap).forEach(k=>delete channelDescMap[k]);
+  Object.keys(hiddenChannelMap).forEach(k=>delete hiddenChannelMap[k]);
+  channelOrder = [];
+}
+function applyImportedEditorMeta(meta){
+  if(!meta || typeof meta !== 'object') return;
+  if(meta.charData && typeof meta.charData === 'object'){
+    Object.entries(meta.charData).forEach(([name,data])=>{
+      charData[name] = {
+        color: data?.color || charData[name]?.color || '#888888',
+        avatar: data?.avatar || null,
+        variants: Array.isArray(data?.variants) ? data.variants.map(v=>({label:v.label || '', dataURL:v.dataURL || ''})) : []
+      };
+      if(!CHARS.find(c=>c.name === name)) CHARS.push({name, color:charData[name].color});
+    });
+  }
+  Object.assign(txtColorMap, meta.txtColorMap && typeof meta.txtColorMap === 'object' ? meta.txtColorMap : {});
+  Object.assign(channelColorMap, meta.channelColorMap && typeof meta.channelColorMap === 'object' ? meta.channelColorMap : {});
+  Object.assign(channelGroupModeMap, meta.channelGroupModeMap && typeof meta.channelGroupModeMap === 'object' ? meta.channelGroupModeMap : {});
+  Object.assign(channelLabelMap, meta.channelLabelMap && typeof meta.channelLabelMap === 'object' ? meta.channelLabelMap : {});
+  Object.assign(channelDescMap, meta.channelDescMap && typeof meta.channelDescMap === 'object' ? meta.channelDescMap : {});
+  if(Array.isArray(meta.channelOrder)) channelOrder = meta.channelOrder.map(normalizeChannelLabel);
+}
 function enterEditor(data){
   document.getElementById('page-upload').style.display='none';
   document.getElementById('page-editor').style.display='block';
   const wrap=document.getElementById('wrap');
   unwrapChannelClusters(wrap);
   wrap.querySelectorAll('.msg').forEach(m=>m.remove());
-  CHARS.length=0;Object.keys(charData).forEach(k=>delete charData[k]);
+  wrap.querySelectorAll('.msg-divider,.msg-cg').forEach(m=>m.remove());
+  resetImportedEditorState();
   const h1=document.getElementById('page-title');
   if(h1){h1.textContent=data?data.title:'TRPG 團錄';document.title=h1.textContent;}
   if(!data)return;
@@ -2786,10 +3300,14 @@ function enterEditor(data){
   if(data.chars&&data.chars.length){
     data.chars.forEach(c=>{CHARS.push(c);charData[c.name]={color:c.color,avatar:null,variants:[]};});
   }
+  applyImportedEditorMeta(data.meta);
   wrap.querySelectorAll('.msg').forEach(attachMsgHandlers);
+  wrap.querySelectorAll('.msg-divider').forEach(attachDividerHandlers);
+  wrap.querySelectorAll('.msg-cg').forEach(attachCGHandlers);
   resizeAvatars();
   reindexMsgs();
   rebuildChannelClusters();
+  markSpeakerBreaksInEditor();
 }
 
 </script>

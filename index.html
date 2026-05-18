@@ -3096,7 +3096,7 @@ function buildTocExport(){
   // 閱覽版目錄：純 hover 展開，不需要按鈕或 JS toggle
   const tocBtnHtml = ''; // 不需要目錄按鈕（面板 hover 自動展開）
   const tocPanelHtml = `<div id="toc-panel"><div id="toc-inner"><div id="toc-hdr"><span>目錄</span></div><div id="toc-list">${listHtml}</div></div></div>`;
-  const tocJs = `function tocGo(id){if(!id)return;var el=document.querySelector('[data-toc-anchor="'+id+'"]');if(el){el.scrollIntoView({behavior:'smooth'});}}`;
+  const tocJs = `function tocGo(id){if(!id)return;var el=document.querySelector('[data-toc-anchor="'+id+'"]');if(!el)return;var topbar=document.getElementById('topbar');var topbarH=topbar?topbar.getBoundingClientRect().height:0;var extraGap=10;var targetTop=window.scrollY+el.getBoundingClientRect().top-topbarH-extraGap;window.scrollTo({top:Math.max(0,targetTop),behavior:'smooth'});}`;
   return {tocBtnHtml, tocPanelHtml, tocJs, items};
 }
 

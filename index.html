@@ -2572,7 +2572,7 @@ function buildReadOnlyHtml(previewMode=false){
   // ── 4. 組裝閱覽版 HTML ──
   const {tocBtnHtml,tocPanelHtml,tocJs,items:tocExportItems} = buildTocExport(isDark);
   const tocPanelCss=tocExportItems&&tocExportItems.length?`
-#toc-panel{position:fixed;right:0;top:50%;transform:translateY(-50%);width:10px;height:auto;max-height:80vh;background:var(--border);border-radius:6px 0 0 6px;z-index:200;display:flex;flex-direction:row;overflow:hidden;transition:width .22s cubic-bezier(.4,0,.2,1),background .15s;cursor:pointer}
+#toc-panel{position:fixed;right:0;top:50%;transform:translateY(-50%);width:10px;height:auto;max-height:80vh;background:var(--modal-border);border-radius:6px 0 0 6px;z-index:200;display:flex;flex-direction:row;overflow:hidden;transition:width .22s cubic-bezier(.4,0,.2,1),background .15s;cursor:pointer}
 #toc-panel:hover{width:210px;background:var(--topbar);border:1px solid var(--border);border-right:none;box-shadow:-4px 0 20px rgba(0,0,0,.3);cursor:default;border-radius:10px 0 0 10px}
 #toc-inner{opacity:0;width:210px;min-width:210px;display:flex;flex-direction:column;transition:opacity .18s .06s;pointer-events:none;overflow:hidden}
 #toc-panel:hover #toc-inner{opacity:1;pointer-events:auto}
@@ -2600,8 +2600,8 @@ function buildReadOnlyHtml(previewMode=false){
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#1e1f22;--chat:#313338;--text:#dbdee1;--border:#232428;--topbar:#2b2d31;--channel-cluster-bg:#2b2d31}
-[data-theme=light]{--bg:#f2f3f5;--chat:#fff;--text:#2e3338;--border:#e3e5e8;--topbar:#fff;--channel-cluster-bg:#eceff3}
+:root{--bg:#1e1f22;--chat:#313338;--text:#dbdee1;--border:#232428;--topbar:#2b2d31;--modal-border:#3a3c42;--channel-cluster-bg:#2b2d31}
+[data-theme=light]{--bg:#f2f3f5;--chat:#fff;--text:#2e3338;--border:#e3e5e8;--topbar:#fff;--modal-border:#e3e5e8;--channel-cluster-bg:#eceff3}
 body{background:var(--bg);font-family:'Noto Sans TC',sans-serif;min-height:100vh;color:var(--text);transition:background .2s,color .2s}
 body.nm-hidden-view .msg-row.is-unnamed.unnamed-loose .txta{padding-bottom:0}
 body.nm-hidden-view .msg-row.is-unnamed.unnamed-after-cluster .txta{padding-top:0}
